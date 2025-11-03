@@ -68,4 +68,54 @@ def download_csv_to_dataframe(ftps: FTP_TLS, directory: str, filename: str) -> p
   return pd.read_csv(buf)
 
 def upload_dataframe_as_csv(ftps: FTP_TLS, directory: str, filename: str, df: pd.DataFrame) -> None
+  "Upload pandas DataFrame as csv to ftp"
 
+  ftps.cwd(directory)
+  csv_bytes = df.to_csv(index=False).encode("utf-8")
+  buf = io.BytesIO(csv_bytes)
+  ftps.storbinary(f"STOR {filename}", buf)
+
+def delete_file(ftps: FTP_TLS, directory: str, filename: str) -> None;
+  ftps.cwd(directory)
+  ftps.delete(filename)
+
+#---------------------------------------------
+def process_new_files():
+  print(f"connecting to ftp...")
+  ftps = connect_ftp()
+
+  try:
+    print(f"Ensuring output directory exsits: {OUTPUT_DIR}")
+    ensure_dir(ftps, OUTPUT_DIR)
+
+    print(f"ListingCSV files in {INPUT_DIR}...")
+    input_files = list_csv_files(ftps, INPUT_DIR)
+
+    if not input_files:
+      print("No CSV files found. Nothing to do.")
+      return
+
+    for name in input_files:
+      base, ext = os.path.splitext(name)
+      processed_name = f"{base}_clean.csv"
+
+      if file_exsits(ftps, OUTPUT_DIR, processed_name):
+        print(f"Skipping {name} (already processed as {processed_name})")
+        continue
+
+      print(f"Processing {name} -> {processed_name}")
+
+      df_raw = download_csv_to_dataframe(ftps, INPUT_DIR, name)
+      df_clean = transform_dataframe(df_raw)
+      upload_dataframe _as_csv(ftps, OUTPUT_DIR, processed_name, df_clean)
+      print(f"Uploaded cleaned file to {OUTPUT_DIR}/{processed_name}")
+
+    print("Done processing files.")
+  finally:
+    ftps.quit()
+    print("FTP connection closed.")
+
+if __name__ == "__main__":
+  process_new_files()
+  
+      
