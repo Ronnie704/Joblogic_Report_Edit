@@ -4,8 +4,8 @@ from ftplib import FTP_TLS, error_perm
 import pandas as pd 
 
 FTP_HOST = "ftp.drivehq.com"
-FTP_USER = os.environ.get("flowright_ftp")
-FTP_PASS = os.environ.get("Dorchester56!)
+FTP_USER = os.environ.get("FTP_USER")
+FTP_PASS = os.environ.get("FTP_PASS")
 
 INPUT_DIR = "/JoblogicReports"
 OUTPUT_DIR = "/JoblogicReports/processed"
