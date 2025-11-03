@@ -6,3 +6,59 @@ import pandas as pd
 FTP_HOST = "ftp.drivehq.com"
 FTP_USER = os.environ.get("flowright_ftp")
 FTP_PASS = os.environ.get("Dorchester56!)
+
+INPUT_DIR = "/JoblogicReports"
+OUTPUT_DIR = "/JoblogicReports/processed"
+
+def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+
+def connect_ftp() -> FTP_TLS:
+  if not FTP_USER or not FTP_PASS:
+    raise RuntimeError("FTP USER AND PASS MUST BE SET")
+
+  ftps = FTP_TLS(FTP_HOST)
+  ftps.login(FTP_USER, FTP_PASS)
+  ftps.prot_p()
+  return ftps
+
+def ensure_dir(ftps: FTP_TLS, path: str) -> None:
+  "Ensure directory path exists"
+  original = ftps.pwd()
+  parts = [p for p in path.strip("/").split("/") if p]
+
+  for part in parts:
+    try:
+      ftps.cwd(part)
+    except error_perm:
+      ftps.mkd(part)
+      ftps.cwd(part)
+
+  ftps.cwd(original)
+
+def list_csv_files(ftps: FTP_TLS, path: str) -> list[str]:
+  "Return list of .csv files"
+  ftps.cwd(path)
+  try:
+    names = ftps.nlst()
+  except error_perm as e:
+    if "No files found" in str(e):
+      return []
+    raise
+
+  return [n for n in names if n.lower().endswith(".csv")]
+
+def file_exists(ftps: FTP_TLS, directory: str, filename: str) -> bool:
+  "Check if file exsits in directory"
+
+    ftps.cwd(directory)
+    try:
+      names = ftps.nlst()
+    expect error_perm as e:
+      if "No files found" in str(e):
+        return False
+      raise
+    return filename in names
+
+def download_csv_to_dataframe(ftps: FTP_TLS, directory: str, filename: str) -> pd.DataFrame:
+  "Download csv from ftp into panda data frame"
+
