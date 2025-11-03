@@ -61,4 +61,11 @@ def file_exists(ftps: FTP_TLS, directory: str, filename: str) -> bool:
 
 def download_csv_to_dataframe(ftps: FTP_TLS, directory: str, filename: str) -> pd.DataFrame:
   "Download csv from ftp into panda data frame"
+  ftps.cwd(directory)
+  buf = io.BytesIO()
+  ftps.retrbinary(f"RETR {filename}", buf.write)
+  buf.seek(0)
+  return pd.read_csv(buf)
+
+def upload_dataframe_as_csv(ftps: FTP_TLS, directory: str, filename: str, df: pd.DataFrame) -> None
 
