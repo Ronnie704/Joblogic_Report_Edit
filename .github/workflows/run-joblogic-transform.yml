@@ -1,0 +1,28 @@
+name: Joblogic Transformer
+
+on:
+  schedule:
+    - cron: "0 1 * * *"   # runs every day at 1 AM UTC (≈ 1 AM UK winter / 2 AM summer)
+  workflow_dispatch:      # lets you trigger manually
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Joblogic script
+        env:
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASS: ${{ secrets.FTP_PASS }}
+        run: python Joblogic_Report.py
