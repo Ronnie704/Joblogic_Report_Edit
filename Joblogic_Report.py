@@ -24,36 +24,28 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         errors="coerce",
       )
 
-  #3 add Labour column (Total
-  
-  if "Total Sell" in df.columns and "Material Sell" in df.columns:
-    total = pd.to_numeric(
-      df["Total Sell"].astype(str).str.replace("[^0-9\.\-]", "", regex=True),
-      errors="coerce",
-    )
-    material = pd.to_numeric(
-      df["Material Sell"].astype(str).str.replace(r"[0-9]\.\-]", "", regex=True),
-      errors="coerce",
-    )
-    df["Labour"] = total - material
+  #3 add Labour column (Total Sell - Material Sell)
+  if {"Total Sell", "Material Sell"}.issibset(df.columns):
+    df["Labour"] = df["Total Sell"].fillna(0) - df["Material Sell"].fillna(0)
   else:
-    df["Labour"] = pd.NA
-
+    df["Labour] = pd.NA
+    
+  #4 If job type == PPM and total sell == 0 use job ref 1 as new total sell
   if {"Job Type", "Total Sell", "Job Ref 1"}.issubset(df.columns):
-    df["Total Sell"] = pd.to_numeric(
-      df["Total Sell"].astype(str).str.replace(r"0-9\.\-]", "", regex=True),
-      errors="coerce",
-    )
-    df["Job Ref 1"] = pd.to_numeric(
-      df["Job Ref 1"].astype(str).str.replace(r"[^0-9\.\-]", "", regex=True),
-      errors="coerce",
+   condition_ppm = (df["Job Type"].str.strip().str.upper() == "PPM") & (df["Total Sell"].fillna(0) == 0)
+   df.loc[condition_ppm, "Total Sell"] = df.loc[condition_ppm, "Job Ref 1"]
+
+  #5 If Job Type == quoted , set total sell = total sell - material sell
+  if {"Job Type", "Total Sell", "Material Sell",}.issubset(df.columns):
+    condition_quoted = df["Job Type"].str.strip().str.upper() == "Quoted"
+    df.loc[condition_quoted, "Total Sell"] = (
+      df.loc[condition_quoted, "Total Sell"].fillna(0)
+      - df.loc[condition_quoted, "Material Sell"].fillna(0)
     )
 
-  condition = (df["Job Type"].str.strip().str.upper() == "PPM") & (df["Total Sell"].fillna(0) == 0)
-  df.loc[condition, "Total Sell"] = df.loc[condition, "Job Ref 1"]
+  #6 drop Job Ref 1
+    df = df.drop(columns=["Job Ref 1"], errors="ignore")
 
-  df = df.drop(columns=["Job Ref 1"], errors="ignore")
-  
   return df
   
 def connect_ftp() -> FTP_TLS:
