@@ -12,6 +12,50 @@ OUTPUT_DIR = "/JoblogicReports/processed"
 
 def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
+  #1. Drops columns
+  columns_to_drop = ["Job Ref 2","Expense Cost","Expense Sell","Reference Number"]
+  df = df.drop(columns=[c for c in columns_to_drop if c in df.columns], errors="ignore")
+
+  #2. Convert Numeric columns 
+  for col in ["Total Sell", "Material Sell", "Job Ref 1"]:
+    if col in df.columns:
+      df[col] = pd.to_numeric(
+        df[col].astype(str).str.replace(r"[^0-9\.\-]", "", regex=True),
+        errors="coerce",
+      )
+
+  #3 add Labour column (Total
+  
+  if "Total Sell" in df.columns and "Material Sell" in df.columns:
+    total = pd.to_numeric(
+      df["Total Sell"].astype(str).str.replace("[^0-9\.\-]", "", regex=True),
+      errors="coerce",
+    )
+    material = pd.to_numeric(
+      df["Material Sell"].astype(str).str.replace(r"[0-9]\.\-]", "", regex=True),
+      errors="coerce",
+    )
+    df["Labour"] = total - material
+  else:
+    df["Labour"] = pd.NA
+
+  if {"Job Type", "Total Sell", "Job Ref 1"}.issubset(df.columns):
+    df["Total Sell"] = pd.to_numeric(
+      df["Total Sell"].astype(str).str.replace(r"0-9\.\-]", "", regex=True),
+      errors="coerce",
+    )
+    df["Job Ref 1"] = pd.to_numeric(
+      df["Job Ref 1"].astype(str).str.replace(r"[^0-9\.\-]", "", regex=True),
+      errors="coerce",
+    )
+
+  condition = (df["Job Type"].str.strip().str.upper() == "PPM") & (df["Total Sell"].fillna(0) == 0)
+  df.loc[condition, "Total Sell"] = df.loc[condition, "Job Ref 1"]
+
+  df = df.drop(columns=["Job Ref 1"], errors="ignore")
+  
+  return df
+  
 def connect_ftp() -> FTP_TLS:
   if not FTP_USER or not FTP_PASS:
     raise RuntimeError("FTP USER AND PASS MUST BE SET")
