@@ -74,6 +74,28 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     elif "Engineer" in df.columns:
         df = df.sort_values(by="Engineer", ascending=True).reset_index(drop=True)
 
+    desired_order = [
+        "Job Number",
+        "Quote Number",
+        "Customer Order Number",
+        "Job Type",
+        "Status",
+        "Job Category",
+        "Customer Name",
+        "Site Name",
+        "Engineer",
+        "Job Travel",
+        "Time on Site",
+        "Time off Site",
+        "Home Time",
+        "Material Cost",
+        "Material Sell",
+        "Labour",
+        "Total Sell"
+    ]
+
+    df = df[[c for c in desired_order if c in df.columns] + [c for c in df.columns if c not in desired_order]]
+
     return df
 
 
