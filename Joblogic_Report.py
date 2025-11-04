@@ -72,7 +72,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             ascending=[True, True]
         ).reset_index(drop=True)
     elif "Engineer" in df.columns:
-        df = df.sort_values(by="Engineer, ascending=True).reset_index(drop=True)
+        df = df.sort_values(by="Engineer", ascending=True).reset_index(drop=True)
 
     return df
 
