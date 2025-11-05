@@ -94,11 +94,9 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
             shift_num = is_start.cumsum().astype(int)
 
-            group["Shift ID"] = (
-                group["Engineer"].iloc[0].astype(str)
-                + "_"
-                + shift_num.astype(str)
-            )
+            base = str(group["Engineer"].iloc[0])
+            group["Shift ID"] = base + "_" + shift_num.astype(str)
+            
             return group
 
         df = df.groupby("Engineer", group_keys=False).apply(add_shift_ids)
