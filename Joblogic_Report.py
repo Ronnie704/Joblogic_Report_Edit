@@ -209,6 +209,8 @@ def process_new_files():
             df_clean = transform_dataframe(df_raw)
             upload_dataframe_as_csv(ftps, OUTPUT_DIR, processed_name, df_clean)
             print(f"Uploaded cleaned file to {OUTPUT_DIR}/{processed_name}")
+            delete_file(ftps, INPUT_DIR, name)
+            print(f"Deleted original file: {name}")
 
         print("Done processing files.")
     finally:
