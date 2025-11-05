@@ -83,6 +83,10 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     elif "Engineer" in df.columns:
         df = df.sort_values(by="Engineer", ascending=True).reset_index(drop=True)
 
+    for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour"]:
+        if col not in df.columns:
+            df[col] = pd.NA
+
     desired_order = [
         "Job Number",
         "Quote Number",
@@ -100,7 +104,11 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Material Cost",
         "Material Sell",
         "Labour",
-        "Total Sell"
+        "Total Sell",
+        "Overhead",
+        "Day Cost",
+        "Day Sell",
+        "Day Labour"
     ]
 
     df = df[[c for c in desired_order if c in df.columns] + [c for c in df.columns if c not in desired_order]]
