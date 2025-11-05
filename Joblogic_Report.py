@@ -103,7 +103,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             if pd.notna(ht):
                 current_shift_id += 1
 
-            df["Shift ID"] shift_ids
+            df["Shift ID"] = shift_ids
 
             day_costs = (
                 df.groupby("Shift ID")["Material Cost"]
