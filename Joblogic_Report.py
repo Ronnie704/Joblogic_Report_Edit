@@ -84,38 +84,36 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df = df.sort_values(by="Engineer", ascending=True).reset_index(drop=True)
 
     #8 calculate day cost
-    if {"Engineer", "Home Time", "Material Cost"}.issubset(df.columns):
+    if {"Engineer", "Job Travel", "Home Time", "Material Cost"}.issubset(df.columns):
         df = df.sort_values(by=["Engineer", "Job Travel"]).reset_index(drop=True)
 
-        shift_ids = []
-        last_engineer = None
-        current_shift_id = 0
+        def add_shift_ids(group: pd.DataFrame) -> pd.DataFrame:
+            ht = group["Home Time"]
+            is_start = ht.shift(1).notna()
+            is_start.iloc[0] = True
 
-        for i, row in df.iterrows():
-            eng = row["Engineer"]
-            ht = row["Home Time"]
+            shift_num = is_start.cumsum().astype(int)
 
-            if eng != last_engineer:
-                current_shift_id = 1
-                last_engineer = eng
-            shift_ids.append(f"{eng}_{current_shift_id}")
-
-            if pd.notna(ht):
-                current_shift_id += 1
-
-            df["Shift ID"] = shift_ids
-
-            day_costs = (
-                df.groupby("Shift ID")["Material Cost"]
-                .sum()
-                .rename("Day Cost")
-                .reset_index()
+            group["Shift ID"] = (
+                group["Engineer"].iloc[0].astype(str)
+                + "_"
+                + shift_num.astype(str)
             )
+            return group
 
-            df = df.merge(day_costs, on="Shift ID", how="left")
-            df = df.drop(columns=["Shift ID"])
+        df = df.groupby("Engineer", group_keys=False).apply(add_shift_ids)
+
+        day_costs = (
+            df.groupby("Shift ID")["Material Cost"]
+            .sum()
+            .rename("Day Cost")
+        )
+
+        df = df.join(day_costs, on="Shift ID")
+        df = df.drop(columns=["Shift ID"])
     else:
         df["Day Cost"] = pd.NA
+        
 
     
     for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour"]:
