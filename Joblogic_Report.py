@@ -33,7 +33,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df = df.drop(columns=[c for c in columns_to_drop if c in df.columns], errors="ignore")
 
     # 2. Convert numeric columns
-    for col in ["Total Sell", "Material Sell", "Job Ref 1"]:
+    for col in ["Total Sell", "Material Sell", "Job Ref 1", "Material Cost"]:
         if col in df.columns:
             df[col] = pd.to_numeric(
                 df[col].astype(str).str.replace(r"[^0-9\.\-]", "", regex=True),
@@ -82,6 +82,41 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         ).reset_index(drop=True)
     elif "Engineer" in df.columns:
         df = df.sort_values(by="Engineer", ascending=True).reset_index(drop=True)
+
+        #8 calculate day cost
+    if {"Engineer", "Home Time", "Material Cost"}.issubset(df.columns):
+        df["Home Time"] = pd.to_datetime(df["Home Time"], errors="coerce", dayfirst=True)
+        df = df.sort_values(by=["Engineer", "Job Travel"]).reset_index(drop=True)
+
+        df["Shift ID"] = None
+        shift_id = 0
+        last_engineer = None
+
+        for i, row in df.iterrows():
+            eng = row["Engineer"]
+            ht = row["Home Time"]
+
+            if eng != last_engineer:
+                shift_id = 1
+                last_engineer = eng
+            else:
+                prev_ht = df.loc[i - 1, "Home Time"]
+                if pd.notna(ht) and pd.notna(prev_ht) and row["Job Travel"] > prev_ht:
+                    shift_id += 1
+
+            df.at[i, "Shift ID"] = f"{eng}_{shift_id}"
+
+        day_costs = (
+            df.groupby("Shift ID")["Material Cost"]
+            .sum()
+            .rename("Day Cost")
+            .reset_index()
+        )
+        df = df.merge(day_costs, on="Shift ID", how="left")
+
+        df = df.drop(columns=["Shift ID"])
+    else:
+        df["Day Cost"] = pd.NA
 
     for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour"]:
         if col not in df.columns:
