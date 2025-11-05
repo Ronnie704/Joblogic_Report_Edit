@@ -84,7 +84,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df = df.sort_values(by="Engineer", ascending=True).reset_index(drop=True)
 
     #8 calculate day cost
-    if {"Engineer", "Job Travel", "Home Time", "Material Cost"}.issubset(df.columns):
+    if {"Engineer", "Job Travel", "Home Time", "Material Cost", "Material Sell"}.issubset(df.columns):
         df = df.sort_values(by=["Engineer", "Job Travel"]).reset_index(drop=True)
 
         def add_shift_ids(group: pd.DataFrame) -> pd.DataFrame:
@@ -93,27 +93,38 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             is_start.iloc[0] = True
 
             shift_num = is_start.cumsum().astype(int)
-
             base = str(group["Engineer"].iloc[0])
             group["Shift ID"] = base + "_" + shift_num.astype(str)
-            
             return group
 
         df = df.groupby("Engineer", group_keys=False).apply(add_shift_ids)
 
-        day_costs = (
-            df.groupby("Shift ID")["Material Cost"]
-            .sum()
-            .rename("Day Cost")
+        shift_totals = (
+            df.groupby("Shift ID")
+            .agg({
+                "Material Cost": "sum",
+                "Material Sell": "sum",
+            })
+            .rename(columns={
+                "Material Cost": "Day Cost",
+                "Material Sell": "Day Sell",
+            })
         )
+        
+        #day_costs = (
+        #    df.groupby("Shift ID")["Material Cost"]
+        #    .sum()
+        #    .rename("Day Cost")
+        #)
 
-        df = df.join(day_costs, on="Shift ID")
+        df = df.join(shift_totals, on="Shift ID")
         df = df.drop(columns=["Shift ID"])
     else:
         df["Day Cost"] = pd.NA
+        df["Day Sell"] = pd.NA
         
 
-    
+    #9 makes sure these columns exsit
     for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour"]:
         if col not in df.columns:
             df[col] = pd.NA
