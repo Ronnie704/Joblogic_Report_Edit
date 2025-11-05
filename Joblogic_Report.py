@@ -176,8 +176,12 @@ def upload_dataframe_as_csv(ftps: FTP_TLS, directory: str, filename: str, df: pd
 
 
 def delete_file(ftps: FTP_TLS, directory: str, filename: str) -> None:
-    ftps.cwd(directory)
-    ftps.delete(filename)
+    try:
+        ftps.cwd(directory)
+        ftps.delete(filename)
+        print(f"Deleted original file: {filename}")
+    except Exception as e:
+        print(f"Warning: Could not delete {filename}: {e}")
 
 
 def process_new_files():
@@ -210,12 +214,15 @@ def process_new_files():
             upload_dataframe_as_csv(ftps, OUTPUT_DIR, processed_name, df_clean)
             print(f"Uploaded cleaned file to {OUTPUT_DIR}/{processed_name}")
             delete_file(ftps, INPUT_DIR, name)
-            print(f"Deleted original file: {name}")
+            
 
         print("Done processing files.")
     finally:
-        ftps.quit()
-        print("FTP connection closed.")
+        try:
+            ftps.quit()
+            print("FTP connection closed.")
+        except Exception as e:
+            print(f"Warning: error while closing FTP connection: {e}")
 
 
 if __name__ == "__main__":
