@@ -40,6 +40,15 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                 errors="coerce",
             )
 
+    # 2b convert datetime columns
+    for col in ["Job Travel", "Time on Site", "Time off Site", "Home Time"]:
+        if col in df.columns:
+            df[col] = pd.to_datatime(
+                df[col].astype(str),
+                dayfirst=True,
+                errors="coerce",
+            )
+
     # 3. If Job Type == 'PPM' and Total Sell == 0, use Job Ref 1 as new Total Sell
     if {"Job Type", "Total Sell", "Job Ref 1"}.issubset(df.columns):
         condition_ppm = (
