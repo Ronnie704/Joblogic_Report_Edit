@@ -2,7 +2,7 @@ name: Joblogic Transformer
 
 on:
   schedule:
-    - cron: "0 1 * * *"   # runs every day at 1 AM UTC (≈ 1 AM UK winter / 2 AM summer)
+    - cron: "20 6 * * *"   # runs every day at 6:20 AM UTC (≈ 6:20 AM UK winter / 7:20 AM summer)
   workflow_dispatch:      # lets you trigger manually
 
 jobs:
