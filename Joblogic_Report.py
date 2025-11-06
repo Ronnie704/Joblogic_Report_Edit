@@ -137,7 +137,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         
 
     #9 makes sure these columns exsit
-    for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour", "Day Hours]:
+    for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour", "Day Hours"]:
         if col not in df.columns:
             df[col] = pd.NA
 
