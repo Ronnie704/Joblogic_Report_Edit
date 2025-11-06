@@ -149,10 +149,15 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit"]], on="Shift ID")
 
+        df["Overhead without Wage"] = pd.NA 
+        df["Overhead with Wage/NI"] = pd.NA
+
         summary_idx = df.groupby("Shift ID").tail(1).index
         mask_summary = df.index.isin(summary_idx)
 
-        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit"]:
+        df.loc[mask_summary,"Overhead without Wage"] = 472.57
+
+        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Overhead without Wage", "Overhead with Wage/NI]:
             df.loc[~mask_summary, col] = pd.NA
             
         df = df.drop(columns=["Shift ID", "_job_hours"])
