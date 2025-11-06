@@ -49,6 +49,27 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                 errors="coerce",
             )
 
+    #2c missing home time when there is long break of 4h
+    if {"Engineer", "Job Travel", "Time off Site", "Home Time"}.issubset(df.columns):
+        df = df.sort_values(by=["Engineer", "Job Travel"]).reset_index(drop=True)
+
+        df["next_travel"] = df.groupby("Engineer")["Job Travel"].shift(-1)
+
+        mask = (
+            df["Home Time"].isna()
+            & df["Time off Site"].notna()
+            & df["next_travel"].notna()
+        )
+
+        gap = df["next_travel"] - df["Time off Site"]
+
+        end_of_day = gap.dt.total_seconds() > 4 * 3600
+        mask = mask & end_of_day
+
+        df.loc[mask, "Home Time"] = df.loc[mask, "Time off Site"]
+
+        df = df.drop(columns=["next_travel"])
+
     # 3. If Job Type == 'PPM' and Total Sell == 0, use Job Ref 1 as new Total Sell
     if {"Job Type", "Total Sell", "Job Ref 1"}.issubset(df.columns):
         condition_ppm = (
