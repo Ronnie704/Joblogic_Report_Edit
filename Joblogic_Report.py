@@ -145,14 +145,14 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         )
 
         shift_totals["Real Date"] = shift_totals["Real Date"].dt.date
-        shift_totals["Day Parts Profit"] = shift_totals["Day Sell"] - shift_totals["Day Cost"]
+        shift_totals["Day Part Profit"] = shift_totals["Day Sell"] - shift_totals["Day Cost"]
 
-        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Parts Profit"]], on="Shift ID")
+        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit"]], on="Shift ID")
 
         summary_idx = df.groupby("Shift ID").tail(1).index
         mask_summary = df.index.isin(summary_idx)
 
-        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Parts Profit"]:
+        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit"]:
             df.loc[~mask_summary, col] = pd.NA
             
         df = df.drop(columns=["Shift ID", "_job_hours"])
