@@ -145,13 +145,14 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         )
 
         shift_totals["Real Date"] = shift_totals["Real Date"].dt.date
+        shift_totals["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date"]:
 
-        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date"]], on="Shift ID")
+        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Parts Profit"]], on="Shift ID")
 
         summary_idx = df.groupby("Shift ID").tail(1).index
         mask_summary = df.index.isin(summary_idx)
 
-        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date"]:
+        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Parts Profit"]:
             df.loc[~mask_summary, col] = pd.NA
             
         df = df.drop(columns=["Shift ID", "_job_hours"])
@@ -161,10 +162,11 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df["Day Labour"] = pd.NA
         df["Day Hours"] = pd.NA
         df["Real Date"] = pd.NA
+        df["Day Part Profit"] = pd.NA
         
 
     #9 makes sure these columns exsit
-    for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date"]:
+    for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit"]:
         if col not in df.columns:
             df[col] = pd.NA
 
@@ -192,6 +194,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Day Labour",
         "Day Hours",
         "Real Date",
+        "Day Part Profit",
     ]
 
     df = df[[c for c in desired_order if c in df.columns] + [c for c in df.columns if c not in desired_order]]
