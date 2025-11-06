@@ -99,15 +99,25 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         df = df.groupby("Engineer", group_keys=False).apply(add_shift_ids)
 
+        if {"Time on Site", "Time off Site"}.issubset(df.columns):
+            duration = df["Time off Site"] - df["Time on Site"]
+            df["_job_hours"] = (duration.dt.toal_seconds() / 3600).fillna(0)
+        else:
+            df["_job_hours"] = 0.0
+
         shift_totals = (
             df.groupby("Shift ID")
             .agg({
                 "Material Cost": "sum",
                 "Material Sell": "sum",
+                "Labour": "sum",
+                "_job_hours": "sum",
             })
             .rename(columns={
                 "Material Cost": "Day Cost",
                 "Material Sell": "Day Sell",
+                "Labour": "Day Labour",
+                "_job_hours": "Day Hours",
             })
         )
         
@@ -117,15 +127,17 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         #    .rename("Day Cost")
         #)
 
-        df = df.join(shift_totals, on="Shift ID")
-        df = df.drop(columns=["Shift ID"])
+        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours"]], on="Shift ID")
+        df = df.drop(columns=["Shift ID", "_job_hours"])
     else:
         df["Day Cost"] = pd.NA
         df["Day Sell"] = pd.NA
+        df["Day Labour"] = pd.NA
+        df["Day Hours"] = pd.NA
         
 
     #9 makes sure these columns exsit
-    for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour"]:
+    for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour", "Day Hours]:
         if col not in df.columns:
             df[col] = pd.NA
 
@@ -150,7 +162,8 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Overhead",
         "Day Cost",
         "Day Sell",
-        "Day Labour"
+        "Day Labour",
+        "Day Hours"
     ]
 
     df = df[[c for c in desired_order if c in df.columns] + [c for c in df.columns if c not in desired_order]]
