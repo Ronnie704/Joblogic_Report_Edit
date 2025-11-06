@@ -145,7 +145,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         )
 
         shift_totals["Real Date"] = shift_totals["Real Date"].dt.date
-        shift_totals["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date"]:
+        shift_totals["Day Parts Profit"] = shift_totals["Day Sell"] - shift_totals["Day Cost"]
 
         df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Parts Profit"]], on="Shift ID")
 
