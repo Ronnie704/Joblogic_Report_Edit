@@ -133,21 +133,25 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                 "Material Sell": "sum",
                 "Labour": "sum",
                 "_job_hours": "sum",
+                "Job Travel": "min",
             })
             .rename(columns={
                 "Material Cost": "Day Cost",
                 "Material Sell": "Day Sell",
                 "Labour": "Day Labour",
                 "_job_hours": "Day Hours",
+                "Job Travel": "Real Date",
             })
         )
 
-        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours"]], on="Shift ID")
+        shift_totals["Real Date"] = shift_totals["Real Date"].dt.date
+
+        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date"]], on="Shift ID")
 
         summary_idx = df.groupby("Shift ID").tail(1).index
         mask_summary = df.index.isin(summary_idx)
 
-        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours"]:
+        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date"]:
             df.loc[~mask_summary, col] = pd.NA
             
         df = df.drop(columns=["Shift ID", "_job_hours"])
@@ -156,10 +160,11 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df["Day Sell"] = pd.NA
         df["Day Labour"] = pd.NA
         df["Day Hours"] = pd.NA
+        df["Real Date"] = pd.NA
         
 
     #9 makes sure these columns exsit
-    for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour", "Day Hours"]:
+    for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date"]:
         if col not in df.columns:
             df[col] = pd.NA
 
@@ -185,7 +190,8 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Day Cost",
         "Day Sell",
         "Day Labour",
-        "Day Hours"
+        "Day Hours",
+        "Real Date",
     ]
 
     df = df[[c for c in desired_order if c in df.columns] + [c for c in df.columns if c not in desired_order]]
