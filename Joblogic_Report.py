@@ -235,7 +235,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         overtime_hours = (shift_duration_hours - 9).clip(lower=0)
 
         shift_totals["Day Basic Wage"] = (basic_hours * hourly_rate).round(2)
-        shift_totals["Day Overtime wage"] = (overtime_hours * hourly_rate * 1.5).round(2)
+        shift_totals["Day Overtime Wage"] = (overtime_hours * hourly_rate * 1.5).round(2)
         
         # -------------------------------------------------------
 
@@ -249,7 +249,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         df.loc[mask_summary,"Overhead without Wage"] = 472.57
 
-        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Overhead without Wage", "Overhead with Wage/NI"]:
+        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Overhead without Wage", "Total Cost"]:
             df.loc[~mask_summary, col] = pd.NA
             
         df = df.drop(columns=["Shift ID", "_job_hours"])
@@ -260,10 +260,14 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df["Day Hours"] = pd.NA
         df["Real Date"] = pd.NA
         df["Day Part Profit"] = pd.NA
+        df["Day Basic Wage"] = pd.NA
+        df["Day Overtime Wage"] = pd.NA
+        df["Overhead without Wage"] = pd.NA
+        df["Total Cost"] = pd.NA
         
 
     #9 makes sure these columns exsit
-    for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit"]:
+    for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Cost",]:
         if col not in df.columns:
             df[col] = pd.NA
 
