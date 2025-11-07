@@ -199,6 +199,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                 "_job_hours": "sum",
                 "Job Travel": "min",
                 "Home Time": "max",
+                "Time off Site": "max",
                 "Engineer": "first",
             })
             .rename(columns={
@@ -208,6 +209,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                 "_job_hours": "Day Hours",
                 "Job Travel": "Shift Start",
                 "Home Time": "Shift End",
+                "Time off Site": "Last Time off Site",
             })
         )
 
@@ -217,25 +219,33 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         # ---------------- WAGE CALCULATION ---------------------
 
         is_weekend = shift_totals["Shift Start"].dt.weekday >= 5
-
         weekday_rate = shift_totals["Engineer"].map(ENGINEER_RATE_WEEKDAY)
         weekend_rate = shift_totals["Engineer"].map(ENGINEER_RATE_WEEKEND)
 
         hourly_rate = weekday_rate.copy()
         hourly_rate[is_weekend & weekend_rate.notna()] = weekend_rate[is_weekend & weekend_rate.notna()]
-
         hourly_rate = hourly_rate.fillna(0)
 
-        shift_duration_hours = (
+        total_duration = (
             (shift_totals["Shift End"] - shift_totals["Shift Start"])
             .dt.total_seconds() / 3600
         ).fillna(0).clip(lower=0)
+        
+        home_travel_duration = (
+            (shift_totals["Shift End"] - shift_totals["Last Time off Site"])
+            .dt.total_seconds() / 3600
+        ).fillna(0).clip(lower=0)
+            
+        pre_home_duration = (
+            (shift_totals["Last Time off Site"] - shift_totals["Shift Start"])
+            .dt.total_seconds() / 3600
+        ).fillna(0).clip(lower=0)
 
-        basic_hours = shift_duration_hours.clip(upper=9)
-        overtime_hours = (shift_duration_hours - 9).clip(lower=0)
+        basic_hours = pre_home_duration.clip(upper=9)
+        overtime_hours = (pre_home_duration - basic_hours).clip(lower=0)
 
         shift_totals["Day Basic Wage"] = (basic_hours * hourly_rate).round(2)
-        shift_totals["Day Overtime Wage"] = (overtime_hours * hourly_rate * 1.5).round(2)
+        shift_totals["Day Overtime Wage"] = (overtime_hours * hourly_rate * 1.5 + home_travel_duration * hourly_rate).round(2)
         
         # -------------------------------------------------------
 
@@ -267,7 +277,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         
 
     #9 makes sure these columns exsit
-    for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Cost",]:
+    for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Overhead without Wage", "Total Cost",]:
         if col not in df.columns:
             df[col] = pd.NA
 
