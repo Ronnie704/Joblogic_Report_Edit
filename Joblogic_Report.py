@@ -157,7 +157,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         df.loc[mask_summary,"Overhead without Wage"] = 472.57
 
-        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Overhead without Wage", "Overhead with Wage/NI]:
+        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Overhead without Wage", "Overhead with Wage/NI"]:
             df.loc[~mask_summary, col] = pd.NA
             
         df = df.drop(columns=["Shift ID", "_job_hours"])
