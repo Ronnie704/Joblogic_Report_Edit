@@ -246,10 +246,12 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         shift_totals["Day Basic Wage"] = (basic_hours * hourly_rate).round(2)
         shift_totals["Day Overtime Wage"] = (overtime_hours * hourly_rate * 1.5 + home_travel_duration * hourly_rate).round(2)
+        shift_totals["Total Pay"] = (shift_totals["Day Basic Wage"] + shift_totals["Day Overtime Wage"]).round(2)
+        shift_totals["Wage/Pension/NI"] = ((shift_totals["Day Basic Wage"] * 0.03 + shift_totals["Total Pay"]) * 1.1435).round(2)
         
         # -------------------------------------------------------
 
-        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage",]], on="Shift ID")
+        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI",]], on="Shift ID")
 
         df["Overhead without Wage"] = pd.NA 
         df["Total Cost"] = pd.NA
@@ -259,7 +261,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         df.loc[mask_summary,"Overhead without Wage"] = 472.57
 
-        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Overhead without Wage", "Total Cost"]:
+        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Overhead without Wage", "Total Cost", "Total Pay", "Wage/Pension/NI",]:
             df.loc[~mask_summary, col] = pd.NA
             
         df = df.drop(columns=["Shift ID", "_job_hours"])
@@ -272,12 +274,14 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df["Day Part Profit"] = pd.NA
         df["Day Basic Wage"] = pd.NA
         df["Day Overtime Wage"] = pd.NA
+        df["Total Pay"] = pd.NA
+        df["Wage/Pension/NI"] = pd.NA
         df["Overhead without Wage"] = pd.NA
         df["Total Cost"] = pd.NA
         
 
     #9 makes sure these columns exsit
-    for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Overhead without Wage", "Total Cost",]:
+    for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Overhead without Wage", "Overhead without Wage", "Total Cost",]:
         if col not in df.columns:
             df[col] = pd.NA
 
@@ -310,6 +314,8 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Day Overtime Wage",
         "Overhead without Wage",
         "Total Cost",
+        "Total Pay",
+        "Wage/Pension/NI",
     ]
 
     df = df[[c for c in desired_order if c in df.columns] + [c for c in df.columns if c not in desired_order]]
