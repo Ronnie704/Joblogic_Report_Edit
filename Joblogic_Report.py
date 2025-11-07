@@ -10,6 +10,70 @@ FTP_PASS = os.environ.get("FTP_PASS")
 INPUT_DIR = "/JoblogicReports"
 OUTPUT_DIR = "/JoblogicReports/processed"
 
+ENGINEER_RATE_WEEKDAY = {
+    "Adrian Lewis": 15,
+    "Airon Paul": 12,
+    "Arron Barnes": 12.50,
+    "Bernard Bezuidenhout": 16.50,
+    "Bradley Greener-Simon": 16.50,
+    "Charlie Rowley": 16.00,
+    "Chris Eland": 0,
+    "David Head": 0,
+    "Ellis Russell": 0,
+    "Fabio Conceiocoa": 20,
+    "Gary Brunton": 19,
+    "Gavain Brown": 20,
+    "Greg Czubak": 0,
+    "Jair Gomes": 15,
+    "Jake LeBeau": 13,
+    "Jamie Scott": 0,
+    "Jordan Utter": 15,
+    "Kevin Aubignac": 0,
+    "Matt Bowden": 14,
+    "Mike Weare": 0,
+    "Nelson Vieira": 20,
+    "Paul Preston": 15,
+    "Richard Lambert": 14.5,
+    "Sam Eade": 14,
+    "Sharick Bartley": 15,
+    "Tom Greener-Simon": 15,
+    "William Mcmillan": 18,
+    "Younas": 15,
+    "kieran Mbala": 14,
+}
+
+ENGINEER_RATE_WEEKEND = {
+    "Adrian Lewis": 35,
+    "Airon Paul": 35,
+    "Arron Barnes": 25,
+    "Bernard Bezuidenhout": 35,
+    "Bradley Greener-Simon": 35,
+    "Charlie Rowley": 35,
+    "Chris Eland": 0,
+    "David Head": 0,
+    "Ellis Russell": 0,
+    "Fabio Conceiocoa": 35,
+    "Gary Brunton": 35,
+    "Gavain Brown": 35,
+    "Greg Czubak": 0,
+    "Jair Gomes": 35,
+    "Jake LeBeau": 25,
+    "Jamie Scott": 0,
+    "Jordan Utter": 35,
+    "Kevin Aubignac": 0,
+    "Matt Bowden": 35,
+    "Mike Weare": 0,
+    "Nelson Vieira": 35,
+    "Paul Preston": 35,
+    "Richard Lambert": 35,
+    "Sam Eade": 35,
+    "Sharick Bartley": 35,
+    "Tom Greener-Simon": 35,
+    "William Mcmillan": 35,
+    "Younas": 35,
+    "kieran Mbala": 35,
+}
+
 
 def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -134,23 +198,51 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                 "Labour": "sum",
                 "_job_hours": "sum",
                 "Job Travel": "min",
+                "Home Time": "max",
+                "Engineer": "first",
             })
             .rename(columns={
                 "Material Cost": "Day Cost",
                 "Material Sell": "Day Sell",
                 "Labour": "Day Labour",
                 "_job_hours": "Day Hours",
-                "Job Travel": "Real Date",
+                "Job Travel": "Shift Start",
+                "Home Time": "Shift End",
             })
         )
 
-        shift_totals["Real Date"] = shift_totals["Real Date"].dt.date
+        shift_totals["Real Date"] = shift_totals["Shift Start"].dt.date
         shift_totals["Day Part Profit"] = shift_totals["Day Sell"] - shift_totals["Day Cost"]
 
-        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit"]], on="Shift ID")
+        # ---------------- WAGE CALCULATION ---------------------
+
+        is_weekend = shift_totals["Shift Start"].dt.weekday >= 5
+
+        weekday_rate = shift_totals["Engineer"].map(ENGINEER_RATE_WEEKDAY)
+        weekend_rate = shift_totals["Engineer"].map(ENGINEER_RATE_WEEKEND)
+
+        hourly_rate = weekday_rate.copy()
+        hourly_rate[is_weekend & weekend_rate.notna()] = weekend_rate[is_weekend & weekend_rate.notna()]
+
+        hourly_rate = hourly_rate.fillna(0)
+
+        shift_duration_hours = (
+            (shift_totals["Shift End"] - shift_totals["Shift Start"])
+            .dt.total_seconds() / 3600
+        ).fillna(0).clip(lower=0)
+
+        basic_hours = shift_duration_hours.clip(upper=9)
+        overtime_hours = (shift_duration_hours - 9).clip(lower=0)
+
+        shift_totals["Day Basic Wage"] = (basic_hours * hourly_rate).round(2)
+        shift_totals["Day Overtime wage"] = (overtime_hours * hourly_rate * 1.5).round(2)
+        
+        # -------------------------------------------------------
+
+        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage",]], on="Shift ID")
 
         df["Overhead without Wage"] = pd.NA 
-        df["Overhead with Wage/NI"] = pd.NA
+        df["Total Cost"] = pd.NA
 
         summary_idx = df.groupby("Shift ID").tail(1).index
         mask_summary = df.index.isin(summary_idx)
@@ -200,6 +292,10 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Day Hours",
         "Real Date",
         "Day Part Profit",
+        "Day Basic Wage",
+        "Day Overtime Wage",
+        "Overhead without Wage",
+        "Total Cost",
     ]
 
     df = df[[c for c in desired_order if c in df.columns] + [c for c in df.columns if c not in desired_order]]
