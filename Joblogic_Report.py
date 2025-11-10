@@ -2,6 +2,7 @@ import io
 import os
 from ftplib import FTP_TLS, error_perm
 import pandas as pd
+import numpy as np
 
 FTP_HOST = "ftp.drivehq.com"
 FTP_USER = os.environ.get("FTP_USER")
