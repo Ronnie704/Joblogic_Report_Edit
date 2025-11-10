@@ -271,7 +271,8 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df.loc[mask_summary, "Labour Profit"] = (df.loc[mask_summary, "Day Labour"].fillna(0) - df.loc[mask_summary, "Total Cost"].fillna(0)).round(2)
         df.loc[mask_summary, "Labour Margin"] = (df.loc[mask_summary, "Labour Profit"] / df.loc[mask_summary, "Day Labour"]).replace([np.inf, -np.inf], np.nan) .fillna(0) * 100
         df.loc[mask_summary, "Labour Margin"] = df.loc[mask_summary, "Labour Margin"].round(2)
-        df.loc[mask_summary
+        df.loc[mask_summary, "Combined Margin"] = ((df.loc[mask_summary, "Labour Profit"].fillna(0) + (df.loc[mask_summary, "Day Sell"].fillna(0))) / df.loc[mask_summary, "Day Sell"].fillna(0))).replace([np.inf, -np.inf], np.nan).fillna(0) * 100
+        df.loc[mask_summary, "Combined Margin"] = df.loc[mask_summary, "Combined Margin"].round(2)
 
         for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Overhead without Wage", "Total Cost", "Total Pay", "Wage/Pension/NI",]:
             df.loc[~mask_summary, col] = pd.NA
@@ -339,7 +340,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Labour Turnover",
         "Labour Profit",
         "Labour Margin",
-        
+        "Combined Margin",
     ]
 
     df = df[[c for c in desired_order if c in df.columns] + [c for c in df.columns if c not in desired_order]]
