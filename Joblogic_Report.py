@@ -241,14 +241,18 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             .dt.total_seconds() / 3600
         ).fillna(0).clip(lower=0)
 
-        basic_hours = pd.Series(9.0, index=shift_totals.index)
-        basic_hours = basic_hours.where(total_duration > 0, 0.0)
+        basic_hours = pd.Series(0.0, index=shift_totals.index)
+        basic_hours[total_duration <= 0] = 9.0
         
         overtime_hours = (pre_home_duration - 9).clip(lower=0)
-        overtime_hours = overtime_hours.where(total_duration > 9, 0.0)
+        overtime_hours[total_duration <= 9] = 0.0
+
+        extra_drive = (total_duration - 9).clip(lower=0)
+        extra_drive = extra_drive.clip(upper=home_travel_duration)
+        extra_drive[total_duration <= 9] = 0.0
 
         shift_totals["Day Basic Wage"] = (basic_hours * hourly_rate).round(2)
-        shift_totals["Day Overtime Wage"] = (overtime_hours * hourly_rate * 1.5 + home_travel_duration * hourly_rate).round(2)
+        shift_totals["Day Overtime Wage"] = (overtime_hours * hourly_rate * 1.5 + extra_drive * hourly_rate).round(2)
         shift_totals["Total Pay"] = (shift_totals["Day Basic Wage"] + shift_totals["Day Overtime Wage"]).round(2)
         shift_totals["Wage/Pension/NI"] = ((shift_totals["Day Basic Wage"] * 0.03 + shift_totals["Total Pay"]) * 1.1435).round(2)
         
