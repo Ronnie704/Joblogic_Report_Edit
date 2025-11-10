@@ -323,7 +323,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Day Cost": "Part Cost",
         "Day Sell": "Part Sell",
         "Day Labour": "Labour Turnover",
-        "Overhead": "Overhead Per Shift",
+        "Overhead": "Overhead Per Job",
         "Overhead without Wage": "Overhead",
         "Day Part Profit": "Parts Profit"
     })
