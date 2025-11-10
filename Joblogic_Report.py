@@ -267,6 +267,11 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         mask_summary = df.index.isin(summary_idx)
 
         df.loc[mask_summary,"Overhead without Wage"] = 472.57
+        df.loc[mask_summary, "Total Cost"] = (df.loc[mask_summary, "Wage/Pension/NI"].fillna(0) + df.loc[mask_summary, "Overhead without Wage"].fillna(0)).round(2)
+        df.loc[mask_summary, "Labour Profit"] = (df.loc[mask_summary, "Day Labour"].fillna(0) - df.loc[mask_summary, "Total Cost"].fillna(0)).round(2)
+        df.loc[mask_summary, "Labour Margin"] = (df.loc[mask_summary, "Labour Profit"] / df.loc[mask_summary, "Day Labour"]).replace([np.inf, -np.inf], np.nan) .fillna(0) * 100
+        df.loc[mask_summary, "Labour Margin"] = df.loc[mask_summary, "Labour Margin"].round(2)
+        df.loc[mask_summary
 
         for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Overhead without Wage", "Total Cost", "Total Pay", "Wage/Pension/NI",]:
             df.loc[~mask_summary, col] = pd.NA
@@ -332,6 +337,9 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Part Sell",
         "Parts Profit",
         "Labour Turnover",
+        "Labour Profit",
+        "Labour Margin",
+        
     ]
 
     df = df[[c for c in desired_order if c in df.columns] + [c for c in df.columns if c not in desired_order]]
