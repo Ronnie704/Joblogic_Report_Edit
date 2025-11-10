@@ -271,8 +271,28 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df.loc[mask_summary, "Labour Profit"] = (df.loc[mask_summary, "Day Labour"].fillna(0) - df.loc[mask_summary, "Total Cost"].fillna(0)).round(2)
         df.loc[mask_summary, "Labour Margin"] = (df.loc[mask_summary, "Labour Profit"] / df.loc[mask_summary, "Day Labour"]).replace([np.inf, -np.inf], np.nan) .fillna(0) * 100
         df.loc[mask_summary, "Labour Margin"] = df.loc[mask_summary, "Labour Margin"].round(2)
-        df.loc[mask_summary, "Combined Margin"] = ((df.loc[mask_summary, "Labour Profit"].fillna(0) + (df.loc[mask_summary, "Day Sell"].fillna(0))) / df.loc[mask_summary, "Day Sell"].fillna(0))).replace([np.inf, -np.inf], np.nan).fillna(0) * 100
-        df.loc[mask_summary, "Combined Margin"] = df.loc[mask_summary, "Combined Margin"].round(2)
+        df.loc[mask_summary, "Total Profit"] = (df.loc[mask_summary, "Labour Profit"].fillna(0) + df.loc[mask_summary, "Day Part Profit"].fillna(0)).round(2)
+
+        labour_profit = df.loc[mask_summary, "Labour Profit"].fillna(0)
+        parts_profit = df.loc[mask_summary, "Day Part Profit"].fillna(0)
+        labour_turnover = df.loc[mask_summary, "Day Labour"].fillna(0)
+        part_sell = df.loc[mask_summary, "Day Sell"].fillna(0)
+
+        # Combined Margin = (Labour Profit + Parts Profit) / (Labour Turnover + Parts Sell)
+        combined_margin = (labour_profit + parts_profit) / (labour_turnover + part_sell)
+        combined_margin = combined_margin.replace([np.inf, -np.inf], np.nan).fillna(0) * 100
+        df.loc[mask_summary, "Combined Margin"] = combined_margin.round(2)
+
+        conditions = [
+            df.loc[mask_summary, "Combined Margin"] <= 0,
+            (df.loc[mask_summary, "Combined Margin"] > 0) & (df.loc[mask_summary, "Combined Margin"] <20),
+            (df.loc[mask_summary, "Combined Margin"] >= 20) & (df.loc[mask_summary, "Combined Margin"] < 35),
+            (df.loc[mask_summary, "Combined Margin"] >= 35) & (df.loc[mask_summary, "Combined Margin"] < 50),
+            df.loc[mask_summary, "Combined Margin"] >=50,
+        ]
+        choices = [-20, 0, 20, 50, 100]
+
+        df.loc[mask_summary, "Bonus"] = np.select(conditions, choices, default=0)
 
         for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Overhead without Wage", "Total Cost", "Total Pay", "Wage/Pension/NI",]:
             df.loc[~mask_summary, col] = pd.NA
@@ -341,6 +361,8 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Labour Profit",
         "Labour Margin",
         "Combined Margin",
+        "Total Profit",
+        "Bonus",
     ]
 
     df = df[[c for c in desired_order if c in df.columns] + [c for c in df.columns if c not in desired_order]]
