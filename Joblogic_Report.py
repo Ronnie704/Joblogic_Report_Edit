@@ -292,6 +292,15 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         if col not in df.columns:
             df[col] = pd.NA
 
+    df = df.rename(columns={
+        "Day Cost": "Part Cost",
+        "Day Sell": "Part Sell",
+        "Day Labour": "Labour Turnover",
+        "Overhead": "Overhead Per Shift",
+        "Overhead without Wage": "Overhead",
+        "Day Part Profit": "Parts Profit"
+    })
+
     desired_order = [
         "Job Number",
         "Quote Number",
@@ -310,19 +319,19 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Material Sell",
         "Labour",
         "Total Sell",
-        "Overhead",
-        "Day Cost",
-        "Day Sell",
-        "Day Labour",
+        "Overhead Per Shift",
         "Day Hours",
         "Real Date",
-        "Day Part Profit",
         "Day Basic Wage",
         "Day Overtime Wage",
-        "Overhead without Wage",
-        "Total Cost",
         "Total Pay",
         "Wage/Pension/NI",
+        "Overhead",
+        "Total Cost",
+        "Part Cost",
+        "Part Sell",
+        "Parts Profit",
+        "Labour Turnover",
     ]
 
     df = df[[c for c in desired_order if c in df.columns] + [c for c in df.columns if c not in desired_order]]
