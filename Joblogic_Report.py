@@ -242,7 +242,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         ).fillna(0).clip(lower=0)
 
         basic_hours = pd.Series(0.0, index=shift_totals.index)
-        basic_hours[total_duration <= 0] = 9.0
+        basic_hours[total_duration > 0] = 9.0
         
         overtime_hours = (pre_home_duration - 9).clip(lower=0)
         overtime_hours[total_duration <= 9] = 0.0
