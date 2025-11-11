@@ -192,30 +192,30 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             df["_job_hours"] = 0.0
 
         #----------------------------------------------------------------
-        if "Job Number" in df.columns:
-            job_total_hours = (
-                df.groupby("Job Number")["_job_hours"]
-                .transform("sum")
-            )
+        if {"Job Number", "Engineer", "Time on Site", "Time off Site", "Material Cost", "Material Sell", "Labour", "Total Sell"}.issubset(df.columns):
+            # 1️⃣ Calculate worked hours per row
+            df["_job_hours_split"] = (
+                (df["Time off Site"] - df["Time on Site"])
+                .dt.total_seconds() / 3600
+            ).fillna(0)
 
-            job_row_count = (
-                df.groupby("Job Number")["_job_hours"]
-                .transform("size")
-                .astype(float)
-            )
-            share = pd.Series(0.0, index=df.index)
-            mask_hours = job_total_hours > 0
-            share[mask_hours] = (
-                df["_job_hours"][mask_hours] / job_total_hours[mask_hours]
-            )
+            # 2️⃣ Total hours per job (all engineers combined)
+            job_total_hours = df.groupby("Job Number")["_job_hours_split"].transform("sum")
 
-            mask_zero = ~mask_hours
-            share[mask_zero] = 1.0 / job_row_count[mask_zero]
+            # 3️⃣ Total hours per engineer per job (sum of all their visits)
+            eng_job_hours = df.groupby(["Job Number", "Engineer"])["_job_hours_split"].transform("sum")
 
-            cols_to_split = ["Material Cost", "Material Sell", "Labour", "Total Sell"]
-            for col in cols_to_split:
+            # 4️⃣ Engineer's proportional share (same for all their rows)
+            engineer_share = np.where(job_total_hours > 0, eng_job_hours / job_total_hours, 0.0)
+
+            # 5️⃣ Apply engineer share equally across all their rows (not divided by visits)
+            for col in ["Material Cost", "Material Sell", "Labour", "Total Sell"]:
                 if col in df.columns:
-                    df[col] = df[col].fillna(0) * share
+                    df[col] = (df[col].fillna(0) * engineer_share).round(2)
+
+            # 6️⃣ Clean up helper column
+            df = df.drop(columns=["_job_hours_split"])
+        
         #----------------------------------------------------------------
 
         shift_totals = (
