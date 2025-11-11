@@ -217,6 +217,14 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         shift_totals["Real Date"] = shift_totals["Shift Start"].dt.date
         shift_totals["Day Part Profit"] = shift_totals["Day Sell"] - shift_totals["Day Cost"]
 
+        OVERHEAD_VALUE = 471.03
+        
+        shift_totals["Overhead"] = np.where(
+            shift_totals["Day Hours"] > 0,
+            OVERHEAD_VALUE / shift_totals["Day Hours"],
+            0.0,
+        ).round(2)
+            
         # ---------------- WAGE CALCULATION ---------------------
 
         is_weekend = shift_totals["Shift Start"].dt.weekday >= 5
@@ -259,7 +267,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         
         # -------------------------------------------------------
 
-        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI",]], on="Shift ID")
+        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI", "Overhead",]], on="Shift ID")
 
         df["Overhead without Wage"] = pd.NA 
         df["Total Cost"] = pd.NA
@@ -267,7 +275,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         summary_idx = df.groupby("Shift ID").tail(1).index
         mask_summary = df.index.isin(summary_idx)
 
-        df.loc[mask_summary,"Overhead without Wage"] = 472.57
+        df.loc[mask_summary,"Overhead without Wage"] = OVERHEAD_VALUE
         df.loc[mask_summary, "Total Cost"] = (df.loc[mask_summary, "Wage/Pension/NI"].fillna(0) + df.loc[mask_summary, "Overhead without Wage"].fillna(0)).round(2)
         df.loc[mask_summary, "Labour Profit"] = (df.loc[mask_summary, "Day Labour"].fillna(0) - df.loc[mask_summary, "Total Cost"].fillna(0)).round(2)
         df.loc[mask_summary, "Labour Margin"] = (df.loc[mask_summary, "Labour Profit"] / df.loc[mask_summary, "Day Labour"]).replace([np.inf, -np.inf], np.nan) .fillna(0) * 100
@@ -342,13 +350,13 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Time on Site",
         "Time off Site",
         "Home Time",
+        "Real Date",
         "Material Cost",
         "Material Sell",
         "Labour",
         "Total Sell",
-        "Overhead Per Shift",
         "Day Hours",
-        "Real Date",
+        "Overhead Per Job",
         "Day Basic Wage",
         "Day Overtime Wage",
         "Total Pay",
