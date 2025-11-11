@@ -200,7 +200,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
             job_row_count = (
                 df.groupby("Job Number")["_job_hours"]
-                .transorm("size")
+                .transform("size")
                 .astype(float)
             )
             share = pd.Series(0.0, index=df.index)
