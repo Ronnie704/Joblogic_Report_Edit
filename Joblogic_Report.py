@@ -250,22 +250,51 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             .dt.total_seconds() / 3600
         ).fillna(0).clip(lower=0)
 
-        basic_hours = pd.Series(0.0, index=shift_totals.index)
-        basic_hours[total_duration > 0] = 9.0
-        
-        overtime_hours = (pre_home_duration - 9).clip(lower=0)
-        overtime_hours[total_duration <= 9] = 0.0
+        weekday_mask = ~is_weekend
+        weekend_mask = is_weekend
 
-        extra_drive = (total_duration - 9).clip(lower=0)
-        extra_drive = extra_drive.clip(upper=home_travel_duration)
-        extra_drive[total_duration <= 9] = 0.0
+        # initialise hour buckets
+        basic_hours = pd.Series(0.0, index=shift_totals.index)
+        overtime_hours = pd.Series(0.0, index=shift_totals.index)
+        extra_drive = pd.Series(0.0, index=shift_totals.index)
+
+        # ----------------- WEEKDAYS (Mon–Fri) -----------------
+        # 9 basic hours if any work that day
+        basic_hours.loc[weekday_mask & (total_duration > 0)] = 9.0
+
+        # overtime = pre-home hours above 9
+        weekday_overtime = (pre_home_duration - 9).clip(lower=0)
+        weekday_overtime.loc[total_duration <= 9] = 0.0
+        overtime_hours.loc[weekday_mask] = weekday_overtime.loc[weekday_mask]
+
+        # extra drive time after 9 hours (capped by drive home)
+        weekday_extra_drive = (total_duration - 9).clip(lower=0)
+        weekday_extra_drive = weekday_extra_drive.clip(upper=home_travel_duration)
+        weekday_extra_drive.loc[total_duration <= 9] = 0.0
+        extra_drive.loc[weekday_mask] = weekday_extra_drive.loc[weekday_mask]
+
+        # ----------------- WEEKENDS (Sat–Sun) -----------------
+        # Weekend: ONLY job hours (Day Hours), no drive time, no overtime concept
+        basic_hours.loc[weekend_mask] = shift_totals.loc[weekend_mask, "Day Hours"].fillna(0)
+        overtime_hours.loc[weekend_mask] = 0.0
+        extra_drive.loc[weekend_mask] = 0.0
+
+        # weekday overtime factor 1.5, weekend effectively 1.0 (no overtime)
+        overtime_factor = pd.Series(1.5, index=shift_totals.index)
+        overtime_factor.loc[weekend_mask] = 1.0
 
         shift_totals["Day Basic Wage"] = (basic_hours * hourly_rate).round(2)
-        shift_totals["Day Overtime Wage"] = (overtime_hours * hourly_rate * 1.5 + extra_drive * hourly_rate).round(2)
-        shift_totals["Total Pay"] = (shift_totals["Day Basic Wage"] + shift_totals["Day Overtime Wage"]).round(2)
-        shift_totals["Wage/Pension/NI"] = ((shift_totals["Day Basic Wage"] * 0.03 + shift_totals["Total Pay"]) * 1.1435).round(2)
-        
-        # -------------------------------------------------------
+        shift_totals["Day Overtime Wage"] = (
+            overtime_hours * hourly_rate * overtime_factor + extra_drive * hourly_rate
+        ).round(2)
+        shift_totals["Total Pay"] = (
+            shift_totals["Day Basic Wage"] + shift_totals["Day Overtime Wage"]
+        ).round(2)
+        shift_totals["Wage/Pension/NI"] = (
+            (shift_totals["Day Basic Wage"] * 0.03 + shift_totals["Total Pay"]) * 1.1435
+        ).round(2)
+
+        #---------------------------------------------------------------------------------------
 
         df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI", "Overhead",]], on="Shift ID")
 
