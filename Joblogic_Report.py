@@ -191,6 +191,33 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         else:
             df["_job_hours"] = 0.0
 
+        #----------------------------------------------------------------
+        if "Job Number" in df.columns:
+            job_total_hours = (
+                df.groupby("Job Number")["_job_hours"]
+                .transform("sum")
+            )
+
+            job_row_count = (
+                df.groupby("Job Number")["_job_hours"]
+                .transorm("size")
+                .astype(float)
+            )
+            share = pd.Series(0.0, index=df.index)
+            mask_hours = job_total_hours > 0
+            share[mask_hours] = (
+                df["_job_hours"][mask_hours] / job_total_hours[mask_hours]
+            )
+
+            mask_zero = ~mask_hours
+            share[mask_zero] = 1.0 / job_row_count[mask_zero]
+
+            cols_to_split = ["Material Cost", "Material Sell", "Labour", "Total Sell"]
+            for col in cols_to_split:
+                if col in df.columns:
+                    df[col] = df[col].fillna(0) * share
+        #----------------------------------------------------------------
+
         shift_totals = (
             df.groupby("Shift ID")
             .agg({
