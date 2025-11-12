@@ -331,7 +331,15 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         summary_idx = df.groupby("Shift ID").tail(1).index
         mask_summary = df.index.isin(summary_idx)
 
-        df.loc[mask_summary,"Overhead without Wage"] = OVERHEAD_VALUE
+        SPECIAL_ENGS = {"Greg Czubak", "Mike Weare"}
+        special_mask = mask_summary & df["Engineer"].astype(str).str.strip().isin(SPECIAL_ENGS)
+
+        df.loc[mask_summary, "Overhead without Wage"] = OVERHEAD_VALUE
+
+        for col in ["Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI"]:
+            df.loc[special_mask, col] = 0.0
+        df.loc[special_mask, "Overhead without Wage"] = 600.0
+        
         df.loc[mask_summary, "Total Cost"] = (df.loc[mask_summary, "Wage/Pension/NI"].fillna(0) + df.loc[mask_summary, "Overhead without Wage"].fillna(0)).round(2)
         df.loc[mask_summary, "Labour Profit"] = (df.loc[mask_summary, "Day Labour"].fillna(0) - df.loc[mask_summary, "Total Cost"].fillna(0)).round(2)
         df.loc[mask_summary, "Labour Margin"] = (df.loc[mask_summary, "Labour Profit"] / df.loc[mask_summary, "Day Labour"]).replace([np.inf, -np.inf], np.nan) .fillna(0) * 100
