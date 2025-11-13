@@ -4,6 +4,8 @@ from ftplib import FTP_TLS, error_perm
 import pandas as pd
 import numpy as np
 
+from upload_to_drive import upload_to_drive
+
 FTP_HOST = "ftp.drivehq.com"
 FTP_USER = os.environ.get("FTP_USER")
 FTP_PASS = os.environ.get("FTP_PASS")
@@ -552,10 +554,16 @@ def process_new_files():
 
             df_raw = download_csv_to_dataframe(ftps, INPUT_DIR, name)
             df_clean = transform_dataframe(df_raw)
+            
             upload_dataframe_as_csv(ftps, OUTPUT_DIR, processed_name, df_clean)
             print(f"Uploaded cleaned file to {OUTPUT_DIR}/{processed_name}")
-            delete_file(ftps, INPUT_DIR, name)
-            
+
+            local_filename = processed_name
+            local_path = os.path.join("/tmp", local_filename)
+            df_clean.to_csv(local_path, index=False)
+            print(f"Saved local file for drive upload: {local_path}")
+
+            upload_to_drive(local_path, drive_filename=local_filename)
 
         print("Done processing files.")
     finally:
