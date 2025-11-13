@@ -32,7 +32,7 @@ def upload_to_drive(local_path: str, drive_filename: str | None = None) -> str:
 
   media = MediaFileUpload(
     local_path,
-    mimetype=mimetype
+    mimetype=mimetype,
     resumable=True,
   )
 
