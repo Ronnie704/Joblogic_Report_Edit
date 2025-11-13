@@ -2,18 +2,12 @@ name: Joblogic Transformer
 
 on:
   schedule:
-    - cron: "20 6 * * *"   # runs every day at 6:20 AM UTC (≈ 6:20 AM UK winter / 7:20 AM summer)
-  workflow_dispatch:      # lets you trigger manually
+    - cron: "20 6 * * *"
+  workflow_dispatch:
 
 jobs:
   run-script:
     runs-on: ubuntu-latest
-
-    env:
-      FTP_USER: ${{ secrets.FTP_USER }}
-      FTP_PASS: ${{ secrets.FTP_PASS }}
-      GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
-      GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
 
     steps:
       - name: Checkout code
@@ -29,11 +23,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Write service_account.json from secret
-        run: |
-          echo "$GOOGLE_SERVICE_ACCOUNT_JSON" > service_account.json
-          ls -1 service_account.json
-
       - name: Run Joblogic script
-        run: |
-          python Joblogic_Report.py
+        env:
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASS: ${{ secrets.FTP_PASS }}
+          GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+          GOOGLE_OAUTH_TOKEN: ${{ secrets.GOOGLE_OAUTH_TOKEN }}
+        run: python Joblogic_Report.py
