@@ -564,7 +564,7 @@ def process_new_files():
             print(f"Saved local file for drive upload: {local_path}")
 
             upload_to_drive(local_path, drive_filename=local_filename)
-            delete_file(ftps,Input_Dir,name)
+            delete_file(ftps, Input_Dir, name)
 
         print("Done processing files.")
     finally:
