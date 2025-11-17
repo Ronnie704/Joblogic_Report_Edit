@@ -277,7 +277,44 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             (shift_totals["Shift End"] - shift_totals["Shift Start"])
             .dt.total_seconds() / 3600
         ).fillna(0).clip(lower=0)
-        
+
+        # ---- SUBCONTRACTORS (fixed rules) ----
+        SUB_CONTRACTORS = {
+            "Kevin Aubignac",
+            "Ellis Russell",
+        }
+
+        # strip spaces from Engineer names before matching
+        eng_clean = shift_totals["Engineer"].astype(str).str.strip()
+        sc_mask = eng_clean.isin(SUB_CONTRACTORS)
+        non_sc_mask = ~sc_mask
+
+        # initialise columns
+        shift_totals["Day Basic Wage"] = 0.0
+        shift_totals["Day Overtime Wage"] = 0.0
+        shift_totals["Total Pay"] = 0.0
+        shift_totals["Wage/Pension/NI"] = 0.0
+
+        # --- Subcontractor pay: £90 first hour, £60/hr after, 15-min increments ---
+        if sc_mask.any():
+            sc_hours = shift_totals.loc[sc_mask, "Day Hours"].fillna(0)
+
+            has_hours = (sc_hours > 0).astype(int)
+            first_hour_charge = 90 * has_hours
+
+            extra_hours = (sc_hours - 1).clip(lower=0)
+            extra_hours_rounded = (np.ceil(extra_hours / 0.25) * 0.25).round(2)
+            extra_charge = extra_hours_rounded * 60
+
+            sc_total_pay = first_hour_charge + extra_charge
+
+            shift_totals.loc[sc_mask, "Day Basic Wage"] = sc_total_pay
+            shift_totals.loc[sc_mask, "Day Overtime Wage"] = 0.0
+            shift_totals.loc[sc_mask, "Total Pay"] = sc_total_pay
+            # No uplift for NI/pension for subcontractors
+            shift_totals.loc[sc_mask, "Wage/Pension/NI"] = sc_total_pay
+
+        # ---- Standard employees (existing logic) ----
         home_travel_duration = (
             (shift_totals["Shift End"] - shift_totals["Last Time off Site"])
             .dt.total_seconds() / 3600
@@ -288,48 +325,51 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             .dt.total_seconds() / 3600
         ).fillna(0).clip(lower=0)
 
-        weekday_mask = ~is_weekend
-        weekend_mask = is_weekend
+        weekday_mask = non_sc_mask & (~is_weekend)
+        weekend_mask = non_sc_mask & is_weekend
 
-        # initialise hour buckets
         basic_hours = pd.Series(0.0, index=shift_totals.index)
         overtime_hours = pd.Series(0.0, index=shift_totals.index)
         extra_drive = pd.Series(0.0, index=shift_totals.index)
 
         # ----------------- WEEKDAYS (Mon–Fri) -----------------
-        # 9 basic hours if any work that day
         basic_hours.loc[weekday_mask & (total_duration > 0)] = 9.0
 
-        # overtime = pre-home hours above 9
         weekday_overtime = (pre_home_duration - 9).clip(lower=0)
         weekday_overtime.loc[total_duration <= 9] = 0.0
         overtime_hours.loc[weekday_mask] = weekday_overtime.loc[weekday_mask]
 
-        # extra drive time after 9 hours (capped by drive home)
         weekday_extra_drive = (total_duration - 9).clip(lower=0)
         weekday_extra_drive = weekday_extra_drive.clip(upper=home_travel_duration)
         weekday_extra_drive.loc[total_duration <= 9] = 0.0
         extra_drive.loc[weekday_mask] = weekday_extra_drive.loc[weekday_mask]
 
         # ----------------- WEEKENDS (Sat–Sun) -----------------
-        # Weekend: ONLY job hours (Day Hours), no drive time, no overtime concept
         basic_hours.loc[weekend_mask] = shift_totals.loc[weekend_mask, "Day Hours"].fillna(0)
         overtime_hours.loc[weekend_mask] = 0.0
         extra_drive.loc[weekend_mask] = 0.0
 
-        # weekday overtime factor 1.5, weekend effectively 1.0 (no overtime)
         overtime_factor = pd.Series(1.5, index=shift_totals.index)
         overtime_factor.loc[weekend_mask] = 1.0
 
-        shift_totals["Day Basic Wage"] = (basic_hours * hourly_rate).round(2)
-        shift_totals["Day Overtime Wage"] = (
-            overtime_hours * hourly_rate * overtime_factor + extra_drive * hourly_rate
+        # apply standard wage logic ONLY to non-subcontractors
+        shift_totals.loc[non_sc_mask, "Day Basic Wage"] = (
+            basic_hours[non_sc_mask] * hourly_rate[non_sc_mask]
         ).round(2)
-        shift_totals["Total Pay"] = (
-            shift_totals["Day Basic Wage"] + shift_totals["Day Overtime Wage"]
+
+        shift_totals.loc[non_sc_mask, "Day Overtime Wage"] = (
+            overtime_hours[non_sc_mask] * hourly_rate[non_sc_mask] * overtime_factor[non_sc_mask]
+            + extra_drive[non_sc_mask] * hourly_rate[non_sc_mask]
         ).round(2)
-        shift_totals["Wage/Pension/NI"] = (
-            (shift_totals["Day Basic Wage"] * 0.03 + shift_totals["Total Pay"]) * 1.1435
+
+        shift_totals.loc[non_sc_mask, "Total Pay"] = (
+            shift_totals.loc[non_sc_mask, "Day Basic Wage"]
+            + shift_totals.loc[non_sc_mask, "Day Overtime Wage"]
+        ).round(2)
+
+        shift_totals.loc[non_sc_mask, "Wage/Pension/NI"] = (
+            (shift_totals.loc[non_sc_mask, "Day Basic Wage"] * 0.03
+             + shift_totals.loc[non_sc_mask, "Total Pay"]) * 1.1435
         ).round(2)
 
         #---------------------------------------------------------------------------------------
@@ -577,6 +617,4 @@ def process_new_files():
 
 if __name__ == "__main__":
     process_new_files()
-
   
-      
