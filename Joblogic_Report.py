@@ -277,6 +277,21 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             (shift_totals["Shift End"] - shift_totals["Shift Start"])
             .dt.total_seconds() / 3600
         ).fillna(0).clip(lower=0)
+
+        SUB_CONTRACTORS = {Kevin Aubignac, Ellis Russell}
+        sc_mask = shift_totals["Engineer"].isin(SUB_CONTRACTORS)
+        if sc_mask.any():
+            sc_hours = shift_totals.loc[sc_mask, "Day Hours"].fillna(0)
+            first_hour_charge = 90
+            extra_hours = (sc_hours - 1).clip(lower=0)
+            extra_hours_rounded = (np.ceil(extra_hours / 0.25) * 0.25).round(2)
+            extra_charge = extra_hours_rounded * 60
+            sc_total_pay = first_hour_charge + extra_charge
+
+            shift_totals.loc[sc_mask, "Day Basic Wage"] = sc_total_pay
+            shift_totals.loc[sc_mask, "Day Overtime Wage"] = 0
+            shift_totals.loc[sc_mask, "Total Pay"] = sc_total_pay
+            shift_totals.loc[sc_mask, "Wage/Pension/NI"] = sc_total_pay
         
         home_travel_duration = (
             (shift_totals["Shift End"] - shift_totals["Last Time off Site"])
