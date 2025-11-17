@@ -278,7 +278,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             .dt.total_seconds() / 3600
         ).fillna(0).clip(lower=0)
 
-        SUB_CONTRACTORS = {Kevin Aubignac, Ellis Russell}
+        SUB_CONTRACTORS = {"Kevin Aubignac", "Ellis Russell"}
         sc_mask = shift_totals["Engineer"].isin(SUB_CONTRACTORS)
         if sc_mask.any():
             sc_hours = shift_totals.loc[sc_mask, "Day Hours"].fillna(0)
