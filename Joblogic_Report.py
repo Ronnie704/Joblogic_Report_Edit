@@ -10,8 +10,8 @@ FTP_HOST = "Ronnie789.synology.me"
 FTP_USER = os.environ.get("FTP_USER")
 FTP_PASS = os.environ.get("FTP_PASS")
 
-INPUT_DIR = "/JoblogicReports"
-OUTPUT_DIR = "/JoblogicReports/processed"
+INPUT_DIR = "/JoblogicFTP"
+OUTPUT_DIR = "/JoblogicFTP/processed"
 
 ENGINEER_RATE_WEEKDAY = {
     "Adrian Lewis": 15,
