@@ -6,7 +6,7 @@ import numpy as np
 
 from upload_to_drive import upload_to_drive
 
-FTP_HOST = "ftp.drivehq.com"
+FTP_HOST = "Ronnie789.synology.me"
 FTP_USER = os.environ.get("FTP_USER")
 FTP_PASS = os.environ.get("FTP_PASS")
 
