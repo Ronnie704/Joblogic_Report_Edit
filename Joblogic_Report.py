@@ -195,52 +195,44 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         #----------------------------------------------------------------
         if {
-            "Job Number",
-            "Engineer",
-            "Time on Site",
-            "Time off Site",
-            "Material Cost",
-            "Material Sell",
-            "Labour",
-            "Total Sell",
+            "Job Number", "Engineer", "Time on Site", "Time off Site",
+            "Material Cost", "Material Sell", "Labour", "Total Sell"
         }.issubset(df.columns):
-            # 1️⃣ Calculate worked hours per row
+
+            # 1️⃣ Hours per visit (row)
             df["_job_hours_split"] = (
                 (df["Time off Site"] - df["Time on Site"])
                 .dt.total_seconds() / 3600
             ).fillna(0)
 
-            # 2️⃣ Total hours per job (all engineers combined)
+            # 2️⃣ Total hours per job (all engineers, all visits)
             job_total_hours = df.groupby("Job Number")["_job_hours_split"].transform("sum")
 
             # 3️⃣ Total hours per engineer per job (sum of all their visits)
             eng_job_hours = df.groupby(["Job Number", "Engineer"])["_job_hours_split"].transform("sum")
 
-            # 4️⃣ Engineer's proportional share of the job
+            # 4️⃣ Engineer share of the job (same as before)
             engineer_share = np.where(
-                job_total_hours > 0, eng_job_hours / job_total_hours, 0.0
+                job_total_hours > 0,
+                eng_job_hours / job_total_hours,
+                0.0,
             )
 
-            # 5️⃣ Within-engineer share per visit (so different days/visits get different amounts)
-            row_within_eng_share = np.where(
-                eng_job_hours > 0, df["_job_hours_split"] / eng_job_hours, 0.0
+            # 5️⃣ Within-engineer share per row (visit/day)
+            row_within_engineer_share = np.where(
+                eng_job_hours > 0,
+                df["_job_hours_split"] / eng_job_hours,
+                0.0,
             )
 
             # 6️⃣ Final row share = engineer share × within-engineer share
-            #     → sums back to engineer's total share of the job
-            row_share = engineer_share * row_within_eng_share
+            #    (so: first between engineers, then between their visits)
+            row_share = engineer_share * row_within_engineer_share
 
-            # 7️⃣ Create NEW analysis columns with proper per-visit split,
-            #     but keep original columns using your existing engineer_share logic
+            # 7️⃣ Apply row share to value columns
             for col in ["Material Cost", "Material Sell", "Labour", "Total Sell"]:
                 if col in df.columns:
-                    base = df[col].fillna(0)
-
-                    # New, correctly split per-visit values
-                    df[f"{col} (for analysis)"] = (base * row_share).round(2)
-
-                    # Original behaviour: same value on every visit for that engineer
-                    df[col] = (base * engineer_share).round(2)
+                    df[col] = (df[col].fillna(0) * row_share).round(2)
 
             # 8️⃣ Clean up helper column
             df = df.drop(columns=["_job_hours_split"])
