@@ -130,7 +130,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         gap = df["next_travel"] - df["Time off Site"]
 
-        end_of_day = gap.dt.total_seconds() > 4 * 3600
+        end_of_day = gap.dt.total_seconds() > 6 * 3600
         mask = mask & end_of_day
 
         df.loc[mask, "Home Time"] = df.loc[mask, "Time off Site"]
