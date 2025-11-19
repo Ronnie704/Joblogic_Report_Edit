@@ -473,6 +473,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Overhead": "Overhead Per Job",
         "Overhead without Wage": "Overhead",
         "Day Part Profit": "Parts Profit"
+        "Day Hours": "On Site Hours",
     })
 
     desired_order = [
@@ -494,7 +495,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Material Sell",
         "Labour",
         "Total Sell",
-        "Day Hours",
+        "On Site Hours",
         "Overhead Per Job",
         "Day Basic Wage",
         "Day Overtime Wage",
