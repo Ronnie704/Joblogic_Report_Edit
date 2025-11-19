@@ -504,10 +504,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Combined Margin",
         "Total Profit",
         "Bonus",
-        "Material Cost (for analysis)",
-        "Material Sell (for analysis)",
-        "Labour (for analysis)",
-        "Total Sell (for analysis)",
     ]
 
     df = df[[c for c in desired_order if c in df.columns] + [c for c in df.columns if c not in desired_order]]
