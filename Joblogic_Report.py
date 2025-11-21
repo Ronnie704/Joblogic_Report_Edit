@@ -440,6 +440,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         df.loc[mask_summary, "Bonus"] = np.select(conditions, choices, default=0)
 
+        #------------------------------------------------------------------------------
         # If Only Office Visit in a day 
         if {"Shift ID", "Job Type"}.issubset(df.columns):
             status_upper = df["Job Type"].astype(str).str.strip().str.upper()
@@ -475,6 +476,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             ).fillna(0) *100
 
             df.loc[office_summary, "Bonus"] = 0
+        #------------------------------------------------------------------------------
 
         for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Overhead without Wage", "Total Cost", "Total Pay", "Wage/Pension/NI",]:
             df.loc[~mask_summary, col] = pd.NA
