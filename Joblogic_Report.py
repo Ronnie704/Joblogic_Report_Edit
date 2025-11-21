@@ -87,6 +87,8 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     - Labour = Total Sell - Material Sell
     - sort by Engineer
     """
+    if "Status" in df.columns:
+        df = df.loc[df["Status"].astype(str).str.strip().str.upper() != "CANCELLED"].copy()
 
     # 1. Drop columns
     columns_to_drop = [
@@ -98,9 +100,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Completed Date",
     ]
     df = df.drop(columns=[c for c in columns_to_drop if c in df.columns], errors="ignore")
-
-    if "Status" in df.columns:
-        df = df[~df["Status"].astype(str).str.strip().str.upper().eq("CANCELLED")]
 
     # 2. Convert numeric columns
     for col in ["Total Sell", "Material Sell", "Job Ref 1", "Material Cost"]:
