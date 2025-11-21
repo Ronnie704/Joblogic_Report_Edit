@@ -476,6 +476,10 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                 [np.inf, -np.inf], np.nan
             ).fillna(0) *100
 
+            df.loc[office_summary, "Total Profit"] = (
+                labour_profit_off + parts_profit_off
+            ).round(2)
+
             df.loc[office_summary, "Bonus"] = 0
         #------------------------------------------------------------------------------
 
