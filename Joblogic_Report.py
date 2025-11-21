@@ -466,6 +466,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             labour_profit_off = df.loc[office_summary, "Labour Profit"].fillna(0)
             parts_profit_off = df.loc[office_summary, "Day Part Profit"].fillna(0)
             labour_turnover_off = df.loc[office_summary, "Day Labour"].fillna(0)
+            part_sell_off = df.loc[office_summary, "Day Sell"].fillna(0)
 
             combined_margin_off = (
                 (labour_profit_off + parts_profit_off)
