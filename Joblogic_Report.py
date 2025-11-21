@@ -183,9 +183,17 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         # sort once
         df = df.sort_values(by=["Engineer", "Job Travel"]).reset_index(drop=True)
 
-        # One shift per engineer per day:
-        # Real Date from Job Travel (per row)
-        df["Real Date"] = df["Job Travel"].dt.date
+        # ----- Real Date with night-shift handling -----
+        # Anything before 06:00 in the morning counts as the previous working day
+        jt = df["Job Travel"]
+
+        real_date = np.where(
+            jt.dt.hour < 6,
+            (jt - pd.Timedelta(days=1)).dt.date,   # shift back one day
+            jt.dt.date
+        )
+
+        df["Real Date"] = real_date
 
         # Shift ID = Engineer + Real Date  (e.g. "Gary Brunton_2025-10-06")
         df["Shift ID"] = (
