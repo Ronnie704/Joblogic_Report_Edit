@@ -178,20 +178,27 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df["Labour"] = pd.NA
 
     #8 calculate day cost
+   #8 calculate day cost
     if {"Engineer", "Job Travel", "Home Time", "Material Cost", "Material Sell"}.issubset(df.columns):
+        # sort once
         df = df.sort_values(by=["Engineer", "Job Travel"]).reset_index(drop=True)
 
-        def add_shift_ids(group: pd.DataFrame) -> pd.DataFrame:
-            ht = group["Home Time"]
-            is_start = ht.shift(1).notna()
-            is_start.iloc[0] = True
+        # One shift per engineer per day:
+        # Real Date from Job Travel (per row)
+        df["Real Date"] = df["Job Travel"].dt.date
 
-            shift_num = is_start.cumsum().astype(int)
-            base = str(group["Engineer"].iloc[0])
-            group["Shift ID"] = base + "_" + shift_num.astype(str)
-            return group
+        # Shift ID = Engineer + Real Date  (e.g. "Gary Brunton_2025-10-06")
+        df["Shift ID"] = (
+            df["Engineer"].astype(str).str.strip()
+            + "_"
+            + df["Real Date"].astype(str)
+        )
 
-        df = df.groupby("Engineer", group_keys=False).apply(add_shift_ids)
+        if {"Time on Site", "Time off Site"}.issubset(df.columns):
+            duration = df["Time off Site"] - df["Time on Site"]
+            df["_job_hours"] = (duration.dt.total_seconds() / 3600).fillna(0)
+        else:
+            df["_job_hours"] = 0.0
 
         if {"Time on Site", "Time off Site"}.issubset(df.columns):
             duration = df["Time off Site"] - df["Time on Site"]
