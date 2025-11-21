@@ -118,7 +118,11 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                 errors="coerce",
             )
 
-    # 7. Sort by Engineer (A–Z)
+    if {"Job Travel", "Time on Site"}.isubset(df.columns):
+        mask = df["Job Travel"].isna() & df["Time on Site"].notna()
+        df.loc[mask, "Job Travel"] = df.loc[mask, "Time on Site"]
+
+    # Sort by Engineer (A–Z)
     if {"Engineer", "Job Travel"}.issubset(df.columns):
         df = df.sort_values(
             by=["Engineer", "Job Travel"],
