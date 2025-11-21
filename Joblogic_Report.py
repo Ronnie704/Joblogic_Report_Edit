@@ -177,44 +177,51 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     else:
         df["Labour"] = pd.NA
 
-    #8 calculate day cost
    #8 calculate day cost
     if {"Engineer", "Job Travel", "Home Time", "Material Cost", "Material Sell"}.issubset(df.columns):
         # sort once
         df = df.sort_values(by=["Engineer", "Job Travel"]).reset_index(drop=True)
 
-        jt = df["Job Travel"]
+        # --- 1) Assign continuous shifts per engineer (using Home Time gaps) ---
 
-        # previous Home Time per engineer
-        prev_home = df.groupby("Engineer")["Home Time"].shift(1)
+        def assign_shift_indices(group: pd.DataFrame) -> pd.DataFrame:
+            group = group.sort_values("Job Travel")
+            prev_home = group["Home Time"].shift(1)
 
-        # gap in hours since previous Home Time
-        gap_hours = (jt - prev_home).dt.total_seconds() / 3600
+            gap_hours = (group["Job Travel"] - prev_home).dt.total_seconds() / 3600
+            # new shift if first row OR gap >= 8 hours
+            new_shift = gap_hours.isna() | (gap_hours >= 8)
 
-        # early-morning job (e.g. 00:00–04:59)
-        early = jt.dt.hour < 5
+            # cumulative sum gives 1,2,3,... within this engineer
+            group["Shift Index"] = new_shift.cumsum()
+            return group
 
-        # define what we consider a "long rest" between days
-        # if gap is >= 8 hours, we treat it as a new day, even if it's early
-        long_rest = gap_hours.isna() | (gap_hours >= 8)
+        df = df.groupby("Engineer", group_keys=False).apply(assign_shift_indices)
 
-        # night continuation = early AND NOT long rest
-        night_continuation = early & (~long_rest)
-
-        # default: same calendar date
-        real_date = jt.dt.date
-
-        # for night continuation rows, push to previous calendar day
-        real_date[night_continuation] = (jt[night_continuation] - pd.Timedelta(days=1)).dt.date
-
-        df["Real Date"] = real_date
-
-        # Shift ID = Engineer + Real Date  (e.g. "Gary Brunton_2025-10-06")
+        # Build a stable Shift ID (engineer + shift index)
         df["Shift ID"] = (
             df["Engineer"].astype(str).str.strip()
             + "_"
-            + df["Real Date"].astype(str)
+            + df["Shift Index"].astype(int).astype(str)
         )
+    
+        # --- 2) Decide one Real Date per shift ---
+
+        # shift start time per row (same within a Shift ID)
+        shift_start = df.groupby("Shift ID")["Job Travel"].transform("min")
+
+        # base date is the calendar date of the shift start
+        base_date = shift_start.dt.date
+
+        # treat shifts that START before 05:00 as belonging to the previous day
+        night_shift = shift_start.dt.hour < 5
+    
+        df["Real Date"] = base_date
+        df.loc[night_shift, "Real Date"] = (
+            shift_start[night_shift] - pd.Timedelta(days=1)
+        ).dt.date
+
+        # you can drop Shift Index later, after all calculations
 
         if {"Time on Site", "Time off Site"}.issubset(df.columns):
             duration = df["Time off Site"] - df["Time on Site"]
