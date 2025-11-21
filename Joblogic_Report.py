@@ -188,7 +188,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         jt = df["Job Travel"]
 
         real_date = np.where(
-            jt.dt.hour < 5,
+            jt.dt.hour <= 5,
             (jt - pd.Timedelta(days=1)).dt.date,   # shift back one day
             jt.dt.date
         )
