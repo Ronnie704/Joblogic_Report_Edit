@@ -303,6 +303,8 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             .dt.total_seconds() / 3600
         ).fillna(0).clip(lower=0)
 
+        shift_totals["Shift Hours"] = total_duration.round(2)
+
         # ---- SUBCONTRACTORS (fixed rules) ----
         SUB_CONTRACTORS = {
             "Kevin Aubignac",
@@ -399,7 +401,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         #---------------------------------------------------------------------------------------
 
-        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI", "Overhead",]], on="Shift ID")
+        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI", "Overhead", "Shift Hours",]], on="Shift ID")
 
         df["Overhead without Wage"] = pd.NA 
         df["Total Cost"] = pd.NA
@@ -483,7 +485,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             df.loc[office_summary, "Bonus"] = 0
         #------------------------------------------------------------------------------
 
-        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Overhead without Wage", "Total Cost", "Total Pay", "Wage/Pension/NI",]:
+        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Overhead without Wage", "Total Cost", "Total Pay", "Wage/Pension/NI", "Shift Hours",]:
             df.loc[~mask_summary, col] = pd.NA
             
         df = df.drop(columns=["Shift ID", "_job_hours"])
@@ -500,6 +502,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df["Wage/Pension/NI"] = pd.NA
         df["Overhead without Wage"] = pd.NA
         df["Total Cost"] = pd.NA
+        df["Shift Hours"] = pd.NA
         
 
     #9 makes sure these columns exsit
@@ -537,6 +540,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Labour",
         "Total Sell",
         "On Site Hours",
+        "Shift Hours",
         "Overhead Per Job",
         "Day Basic Wage",
         "Day Overtime Wage",
