@@ -199,13 +199,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             df["_job_hours"] = (duration.dt.total_seconds() / 3600).fillna(0)
         else:
             df["_job_hours"] = 0.0
-
-        if {"Time on Site", "Time off Site"}.issubset(df.columns):
-            duration = df["Time off Site"] - df["Time on Site"]
-            df["_job_hours"] = (duration.dt.total_seconds() / 3600).fillna(0)
-        else:
-            df["_job_hours"] = 0.0
-
+            
         #----------------------------------------------------------------
         if {
             "Job Number", "Engineer", "Time on Site", "Time off Site",
