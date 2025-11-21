@@ -116,6 +116,15 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                 errors="coerce",
             )
 
+    # 7. Sort by Engineer (A–Z)
+    if {"Engineer", "Job Travel"}.issubset(df.columns):
+        df = df.sort_values(
+            by=["Engineer", "Job Travel"],
+            ascending=[True, True]
+        ).reset_index(drop=True)
+    elif "Engineer" in df.columns:
+        df = df.sort_values(by="Engineer", ascending=True).reset_index(drop=True)
+
     #2c missing home time when there is long break of 4h
     if {"Engineer", "Job Travel", "Time off Site", "Home Time"}.issubset(df.columns):
         df = df.sort_values(by=["Engineer", "Job Travel"]).reset_index(drop=True)
@@ -161,15 +170,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df["Labour"] = df["Total Sell"].fillna(0) - df["Material Sell"].fillna(0)
     else:
         df["Labour"] = pd.NA
-
-    # 7. Sort by Engineer (A–Z)
-    if {"Engineer", "Job Travel"}.issubset(df.columns):
-        df = df.sort_values(
-            by=["Engineer", "Job Travel"],
-            ascending=[True, True]
-        ).reset_index(drop=True)
-    elif "Engineer" in df.columns:
-        df = df.sort_values(by="Engineer", ascending=True).reset_index(drop=True)
 
     #8 calculate day cost
     if {"Engineer", "Job Travel", "Home Time", "Material Cost", "Material Sell"}.issubset(df.columns):
