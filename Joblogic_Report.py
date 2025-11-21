@@ -431,14 +431,50 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         conditions = [
             df.loc[mask_summary, "Combined Margin"] <= 0,
-            (df.loc[mask_summary, "Combined Margin"] > 0) & (df.loc[mask_summary, "Combined Margin"] <20),
-            (df.loc[mask_summary, "Combined Margin"] >= 20) & (df.loc[mask_summary, "Combined Margin"] < 35),
+            (df.loc[mask_summary, "Combined Margin"] > 0) & (df.loc[mask_summary, "Combined Margin"] <25),
+            (df.loc[mask_summary, "Combined Margin"] >= 25) & (df.loc[mask_summary, "Combined Margin"] < 35),
             (df.loc[mask_summary, "Combined Margin"] >= 35) & (df.loc[mask_summary, "Combined Margin"] < 50),
             df.loc[mask_summary, "Combined Margin"] >=50,
         ]
         choices = [-20, 0, 20, 50, 100]
 
         df.loc[mask_summary, "Bonus"] = np.select(conditions, choices, default=0)
+
+        # If Only Office Visit in a day 
+        if {"Shift ID", "Job Type"}.issubset(df.columns):
+            status_upper = df["Job Type"].astype(str).str.strip().str.upper()
+            office_rows = status_upper.eq("OFFICE VISIT")
+
+            office_only_shift = office_rows.groupby(df["Shift ID"]).transform("all")
+
+            df.loc[office_only_shift, "Overhead"] = 0
+
+            office_summary = office_only_shift & mask_summary
+
+            df.loc[office_summary, "Overhead without Wage"] = 0
+
+            df.loc[office_summary, "Total Cost"] = (
+                df.loc[office_summary, "Wage/Pension/NI"].fillna(0)
+            ).round(2)
+
+            df.loc[office_summary, "Labour Profit"] = (
+                df.loc[office_summary, "Day Labour"].fillna(0)
+                - df.loc[office_summary, "Total Cost"].fillna(0)
+            ).round(2)
+
+            labour_profit_off = df.loc[office_summary, "Labour Profit"].fillna(0)
+            parts_profit_off = df.loc[office_summary, "Day Part Profit"].fillna(0)
+            labour_turnover_off = df.loc[office_summary, "Day Labour"].fillna(0)
+
+            combined_margin_off = (
+                (labour_profit_off + parts_profit_off)
+                / (labour_turnover_off + part_sell_off)
+            )
+            combined_margin_off = combined_margin_off.replace(
+                [np.inf, -np.inf], np.nan
+            ).fillna(0) *100
+
+            df.loc[office_summary, "Bonus"] = 0
 
         for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Overhead without Wage", "Total Cost", "Total Pay", "Wage/Pension/NI",]:
             df.loc[~mask_summary, col] = pd.NA
