@@ -183,15 +183,29 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         # sort once
         df = df.sort_values(by=["Engineer", "Job Travel"]).reset_index(drop=True)
 
-        # ----- Real Date with night-shift handling -----
-        # Anything before 06:00 in the morning counts as the previous working day
         jt = df["Job Travel"]
 
-        real_date = np.where(
-            jt.dt.hour <= 5,
-            (jt - pd.Timedelta(days=1)).dt.date,   # shift back one day
-            jt.dt.date
-        )
+        # previous Home Time per engineer
+        prev_home = df.groupby("Engineer")["Home Time"].shift(1)
+
+        # gap in hours since previous Home Time
+        gap_hours = (jt - prev_home).dt.total_seconds() / 3600
+
+        # early-morning job (e.g. 00:00–04:59)
+        early = jt.dt.hour < 5
+
+        # define what we consider a "long rest" between days
+        # if gap is >= 8 hours, we treat it as a new day, even if it's early
+        long_rest = gap_hours.isna() | (gap_hours >= 8)
+
+        # night continuation = early AND NOT long rest
+        night_continuation = early & (~long_rest)
+
+        # default: same calendar date
+        real_date = jt.dt.date
+
+        # for night continuation rows, push to previous calendar day
+        real_date[night_continuation] = (jt[night_continuation] - pd.Timedelta(days=1)).dt.date
 
         df["Real Date"] = real_date
 
