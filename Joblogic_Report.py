@@ -182,13 +182,11 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df = df.sort_values(by=["Engineer", "Job Travel"]).reset_index(drop=True)
 
         def add_shift_ids(group: pd.DataFrame) -> pd.DataFrame:
-            df["Real Date"] = df["Job Travel"].dt.date
+            ht = group["Home Time"]
+            is_start = ht.shift(1).notna()
+            is_start.iloc[0] = True
 
-            df["Shift ID"] = (
-                df["Engineer"].astype(str).str.strip()
-                + "_"
-                + df["Real Date"].astype(str)
-            )
+            shift_num = is_start.cumsum().astype(int)
             base = str(group["Engineer"].iloc[0])
             group["Shift ID"] = base + "_" + shift_num.astype(str)
             return group
