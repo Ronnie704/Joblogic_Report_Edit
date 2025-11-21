@@ -125,7 +125,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     # Sort by Engineer (A–Z)
     if {"Engineer", "Time off Site"}.issubset(df.columns):
         df = df.sort_values(
-            by=["Engineer", "Job Travel"],
+            by=["Engineer", "Time off Site"],
             ascending=[True, True]
         ).reset_index(drop=True)
     elif "Engineer" in df.columns:
