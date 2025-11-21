@@ -118,7 +118,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                 errors="coerce",
             )
 
-    if {"Job Travel", "Time on Site"}.isubset(df.columns):
+    if {"Job Travel", "Time on Site"}.issubset(df.columns):
         mask = df["Job Travel"].isna() & df["Time on Site"].notna()
         df.loc[mask, "Job Travel"] = df.loc[mask, "Time on Site"]
 
