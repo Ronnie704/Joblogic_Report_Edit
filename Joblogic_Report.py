@@ -123,7 +123,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df.loc[mask, "Job Travel"] = df.loc[mask, "Time on Site"]
 
     # Sort by Engineer (A–Z)
-    if {"Engineer", "Job Travel"}.issubset(df.columns):
+    if {"Engineer", "Time off Site"}.issubset(df.columns):
         df = df.sort_values(
             by=["Engineer", "Job Travel"],
             ascending=[True, True]
