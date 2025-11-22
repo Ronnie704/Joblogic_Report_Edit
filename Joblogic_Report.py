@@ -177,58 +177,28 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     else:
         df["Labour"] = pd.NA
 
-   #8 calculate day cost
+    #8 calculate day cost
     if {"Engineer", "Job Travel", "Home Time", "Material Cost", "Material Sell"}.issubset(df.columns):
-        # sort once
         df = df.sort_values(by=["Engineer", "Job Travel"]).reset_index(drop=True)
 
-        # --- 1) Assign continuous shifts per engineer (using Home Time gaps) ---
+        def add_shift_ids(group: pd.DataFrame) -> pd.DataFrame:
+            ht = group["Home Time"]
+            is_start = ht.shift(1).notna()
+            is_start.iloc[0] = True
 
-        def assign_shift_indices(group: pd.DataFrame) -> pd.DataFrame:
-            group = group.sort_values("Job Travel")
-            prev_home = group["Home Time"].shift(1)
-
-            gap_hours = (group["Job Travel"] - prev_home).dt.total_seconds() / 3600
-            # new shift if first row OR gap >= 8 hours
-            new_shift = gap_hours.isna() | (gap_hours >= 8)
-
-            # cumulative sum gives 1,2,3,... within this engineer
-            group["Shift Index"] = new_shift.cumsum()
+            shift_num = is_start.cumsum().astype(int)
+            base = str(group["Engineer"].iloc[0])
+            group["Shift ID"] = base + "_" + shift_num.astype(str)
             return group
 
-        df = df.groupby("Engineer", group_keys=False).apply(assign_shift_indices)
-
-        # Build a stable Shift ID (engineer + shift index)
-        df["Shift ID"] = (
-            df["Engineer"].astype(str).str.strip()
-            + "_"
-            + df["Shift Index"].astype(int).astype(str)
-        )
-    
-        # --- 2) Decide one Real Date per shift ---
-
-        # shift start time per row (same within a Shift ID)
-        shift_start = df.groupby("Shift ID")["Job Travel"].transform("min")
-
-        # base date is the calendar date of the shift start
-        base_date = shift_start.dt.date
-
-        # treat shifts that START before 05:00 as belonging to the previous day
-        night_shift = shift_start.dt.hour < 5
-    
-        df["Real Date"] = base_date
-        df.loc[night_shift, "Real Date"] = (
-            shift_start[night_shift] - pd.Timedelta(days=1)
-        ).dt.date
-
-        # you can drop Shift Index later, after all calculations
+        df = df.groupby("Engineer", group_keys=False).apply(add_shift_ids)
 
         if {"Time on Site", "Time off Site"}.issubset(df.columns):
             duration = df["Time off Site"] - df["Time on Site"]
             df["_job_hours"] = (duration.dt.total_seconds() / 3600).fillna(0)
         else:
             df["_job_hours"] = 0.0
-            
+
         #----------------------------------------------------------------
         if {
             "Job Number", "Engineer", "Time on Site", "Time off Site",
@@ -298,7 +268,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             })
         )
 
-        
+        shift_totals["Real Date"] = shift_totals["Shift Start"].dt.date
         shift_totals["Day Part Profit"] = shift_totals["Day Sell"] - shift_totals["Day Cost"]
 
         OVERHEAD_VALUE = 471.03
@@ -431,7 +401,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         #---------------------------------------------------------------------------------------
 
-        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI", "Overhead", "Shift Hours",]], on="Shift ID")
+        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI", "Overhead", "Shift Hours",]], on="Shift ID")
 
         df["Overhead without Wage"] = pd.NA 
         df["Total Cost"] = pd.NA
