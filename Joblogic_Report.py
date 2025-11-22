@@ -259,17 +259,52 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                 0.0,
             )
 
-            # 6️⃣ Final row share = engineer share × within-engineer share
-            #    (so: first between engineers, then between their visits)
-            row_share = engineer_share * row_within_engineer_share
+        # 6️⃣ Final row share = engineer share × within-engineer share
+        #    (so: first between engineers, then between their visits)
+        row_share = engineer_share * row_within_engineer_share
 
-            # 7️⃣ Apply row share to value columns
-            for col in ["Material Cost", "Material Sell", "Labour", "Total Sell"]:
-                if col in df.columns:
-                    df[col] = (df[col].fillna(0) * row_share).round(2)
+        # ---------- ASSISTANT LOGIC ----------
+        ASSISTANTS = {
+            "Airon Paul",
+            "Arron Barnes",
+            "Iosua Caloro",
+            "Jair Gomes",
+            "Jake LeBeau",
+            "Jamie Scott",
+            "Jordan Utter",
+        }
 
-            # 8️⃣ Clean up helper column
-            df = df.drop(columns=["_job_hours_split"])
+        eng_clean = df["Engineer"].astype(str).str.strip()
+        is_assistant = eng_clean.isin(ASSISTANTS)
+
+        # per-job: does this job have at least one non-assistant?
+        has_main = (~is_assistant).groupby(df["Job Number"]).transform("any")
+
+        # start from original row_share
+        row_share_adj = row_share.copy()
+
+        # if job has a main engineer, assistants get 0 share
+        mask_assist_zero = is_assistant & has_main
+        row_share_adj[mask_assist_zero] = 0.0
+
+        # renormalise shares per job so totals still match
+        sum_shares = row_share_adj.groupby(df["Job Number"]).transform("sum")
+
+        row_share_final = row_share_adj.copy()
+        renorm_mask = has_main & (sum_shares > 0)
+
+        row_share_final[renorm_mask] = (
+            row_share_adj[renorm_mask] / sum_shares[renorm_mask]
+        )
+        # ---------- END ASSISTANT LOGIC ----------
+
+        # 7️⃣ Apply final row share to value columns
+        for col in ["Material Cost", "Material Sell", "Labour", "Total Sell"]:
+            if col in df.columns:
+                df[col] = (df[col].fillna(0) * row_share_final).round(2)
+
+        # 8️⃣ Clean up helper column
+        df = df.drop(columns=["_job_hours_split"])
         
         #----------------------------------------------------------------
 
