@@ -177,26 +177,30 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     else:
         df["Labour"] = pd.NA
 
+   
+
     #8 calculate day cost
-   #8 calculate day cost
     if {"Engineer", "Job Travel", "Home Time", "Material Cost", "Material Sell"}.issubset(df.columns):
         # sort once
         df = df.sort_values(by=["Engineer", "Job Travel"]).reset_index(drop=True)
 
-   # --- REAL DATE & SHIFT ID (handles night shifts correctly) ---
+        # --- REAL DATE & SHIFT ID (handles night shifts correctly, using Time off Site) ---
 
         jt = df["Job Travel"]
 
-        # previous Home Time per engineer
-        prev_home = df.groupby("Engineer")["Home Time"].shift(1)
-
-        # gap in hours since previous Home Time
-        gap_hours = (jt - prev_home).dt.total_seconds() / 3600
+        if "Time off Site" in df.columns:
+            # previous Time off Site per engineer
+            prev_off = df.groupby("Engineer")["Time off Site"].shift(1)
+            # gap in hours since previous Time off Site
+            gap_hours = (jt - prev_off).dt.total_seconds() / 3600
+        else:
+            # if no Time off Site, we can't measure the gap
+            gap_hours = pd.Series(np.nan, index=df.index)
 
         # treat 00:00–05:59 as "early"
         early = jt.dt.hour < 6
 
-        # long rest = first job OR >= 8 hours since last Home Time
+        # long rest = first job OR >= 8 hours since last Time off Site
         long_rest = gap_hours.isna() | (gap_hours >= 8)
 
         # only continue previous day if early AND not a long rest
