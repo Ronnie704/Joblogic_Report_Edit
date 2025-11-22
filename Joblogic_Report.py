@@ -269,7 +269,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             })
         )
 
-        shift_totals["Real Date"] = shift_totals["Shift Start"].dt.date
+        
         shift_totals["Day Part Profit"] = shift_totals["Day Sell"] - shift_totals["Day Cost"]
 
         OVERHEAD_VALUE = 471.03
@@ -402,7 +402,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         #---------------------------------------------------------------------------------------
 
-        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI", "Overhead", "Shift Hours",]], on="Shift ID")
+        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI", "Overhead", "Shift Hours",]], on="Shift ID")
 
         df["Overhead without Wage"] = pd.NA 
         df["Total Cost"] = pd.NA
