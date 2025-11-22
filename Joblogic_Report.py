@@ -263,6 +263,9 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         #    (so: first between engineers, then between their visits)
         row_share = engineer_share * row_within_engineer_share
 
+        # make it a pandas Series so we can groupby on it
+        row_share = pd.Series(row_share, index=df.index, dtype=float)
+
         # ---------- ASSISTANT LOGIC ----------
         ASSISTANTS = {
             "Airon Paul",
