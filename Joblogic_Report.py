@@ -183,11 +183,34 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         # sort once
         df = df.sort_values(by=["Engineer", "Job Travel"]).reset_index(drop=True)
 
-        # One shift per engineer per day:
-        # Real Date from Job Travel (per row)
-        df["Real Date"] = df["Job Travel"].dt.date
+   # --- REAL DATE & SHIFT ID (handles night shifts correctly) ---
 
-        # Shift ID = Engineer + Real Date  (e.g. "Gary Brunton_2025-10-06")
+        jt = df["Job Travel"]
+
+        # previous Home Time per engineer
+        prev_home = df.groupby("Engineer")["Home Time"].shift(1)
+
+        # gap in hours since previous Home Time
+        gap_hours = (jt - prev_home).dt.total_seconds() / 3600
+
+        # treat 00:00–05:59 as "early"
+        early = jt.dt.hour < 6
+
+        # long rest = first job OR >= 8 hours since last Home Time
+        long_rest = gap_hours.isna() | (gap_hours >= 8)
+
+        # only continue previous day if early AND not a long rest
+        use_prev_day = early & (~long_rest)
+
+        # start from calendar date of Job Travel
+        real_date = jt.dt.date
+
+        # for true night continuation rows, move to previous calendar day
+        real_date[use_prev_day] = (jt[use_prev_day] - pd.Timedelta(days=1)).dt.date
+
+        df["Real Date"] = real_date
+
+        # one shift per engineer per Real Date
         df["Shift ID"] = (
             df["Engineer"].astype(str).str.strip()
             + "_"
