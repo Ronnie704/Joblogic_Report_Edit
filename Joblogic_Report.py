@@ -57,7 +57,7 @@ ENGINEER_RATE_WEEKEND = {
     "Ellis Russell": 0,
     "Fabio Conceiocoa": 35,
     "Gary Brunton": 35,
-    "Gavain Brown": 35,
+    "Gavain Brown ": 35,
     "Greg Czubak": 0,
     "Jair Gomes": 35,
     "Jake LeBeau": 25,
@@ -72,7 +72,7 @@ ENGINEER_RATE_WEEKEND = {
     "Sam Eade": 35,
     "Sharick Bartley": 35,
     "Tom Greener-Simon": 35,
-    "William Mcmillan": 35,
+    "William Mcmillan ": 35,
     "Younas": 35,
     "kieran Mbala": 35,
 }
