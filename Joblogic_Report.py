@@ -213,6 +213,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         real_date[use_prev_day] = (jt[use_prev_day] - pd.Timedelta(days=1)).dt.date
 
         df["Real Date"] = real_date
+        df["Real Date (Each Row)"] = df["Real Date"]
 
         # one shift per engineer per Real Date
         df["Shift ID"] = (
