@@ -159,12 +159,21 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         ) & (df["Total Sell"].fillna(0) == 0)
         df.loc[condition_ppm, "Total Sell"] = df.loc[condition_ppm, "Job Ref 1"]
 
-    # 4. If Job Type == 'QUOTED', set Total Sell = Total Sell - Material Sell
-    if {"Job Type", "Total Sell", "Material Sell"}.issubset(df.columns):
-        condition_quoted = df["Job Type"].str.strip().str.upper() == "QUOTED"
-        df.loc[condition_quoted, "Total Sell"] = (
-            df.loc[condition_quoted, "Total Sell"].fillna(0)
-            - df.loc[condition_quoted, "Material Sell"].fillna(0)
+    # 4. If Job Type == 'Quoted' and Job Number starts with 'Q0',
+    #    set Total Sell = Total Sell - Material Sell.
+    #    If it starts with 'QR', leave Total Sell as-is.
+    if {"Job Type", "Total Sell", "Material Sell", "Job Number"}.issubset(df.columns):
+        job_type = df["Job Type"].astype(str).str.strip().str.upper()
+        job_num  = df["Job Number"].astype(str).str.strip().str.upper()
+
+        is_quoted = job_type.eq("QUOTED")        # this matches "Quoted   " too
+        is_q0     = job_num.str.startswith("Q0") # only fix these
+
+        mask_fix = is_quoted & is_q0
+
+        df.loc[mask_fix, "Total Sell"] = (
+            df.loc[mask_fix, "Total Sell"].fillna(0)
+            - df.loc[mask_fix, "Material Sell"].fillna(0)
         )
 
     # 5. Drop Job Ref 1 now (we’ve used it)
