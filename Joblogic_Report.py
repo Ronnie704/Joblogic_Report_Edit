@@ -342,7 +342,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                 "Job Travel": "Shift Start",
                 "Home Time": "Shift End",
                 "Time off Site": "Last Time off Site",
-                "Time on Site": "First First Time on Site",
+                "Time on Site": "First Time on Site",
             })
         )
 
