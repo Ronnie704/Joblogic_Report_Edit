@@ -632,15 +632,17 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Mike Weare",
     }
 
-    all_engineers = set(ENGINEER_RATE_WEEKDAY.keys())
-    ENGINEERS_FOR_ROLE = all_engineers - ASSISTANTS_FOR_ROLE - SUBCONTRACTORS_FOR_ROLE
-
-    df["Role"] = "Unknown"
+    ASSISTANTS_CLEAN = {name.strip() for name in ASSISTANTS_FOR_ROLE}
+    SUBCONTRACTORS_CLEAN = {name.strip() for name in SUBCONTRACTORS_FOR_ROLE}
+    ENGINEERS_ALL = {name.strip() for name in ENGINEER_RATE_WEEKDAY.keys()}
+    ENGINEERS_CLEAN = ENGINEERS_ALL -ASSISTANTS_CLEAN - SUBCONTRACTORS_CLEAN
     eng_clean = df["Engineer"].astype(str).str.strip()
 
-    df.loc[eng_clean.isin(ENGINEERS_FOR_ROLE), "Role"] = "Engineer"
-    df.loc[eng_clean.isin(ASSISTANTS_FOR_ROLE), "Role"] = "Assistant"
-    df.loc[eng_clean.isin(SUBCONTRACTORS_FOR_ROLE), "Role"] = "Sub Contractors"
+    df["Role"] = "Unknown"
+
+    df.loc[eng_clean.isin(ENGINEERS_CLEAN), "Role"] = "Engineer"
+    df.loc[eng_clean.isin(ASSISTANTS_CLEAN), "Role"] = "Assistant"
+    df.loc[eng_clean.isin(SUBCONTRACTORS_CLEAN), "Role"] = "Sub Contractors"
 
     desired_order = [
         "Job Number",
