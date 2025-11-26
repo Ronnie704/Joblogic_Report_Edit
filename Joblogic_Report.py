@@ -347,7 +347,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         )
 
         shift_totals["Shift First Job Travel"] = df.groupby("Shift ID")["Job Travel"].transform("min").groupby(df["Shift ID"]).first()
-        shift_totals["Shift First Time on Site"] = df.groupby("Shift ID")["Time on Site").transform("min").groupby(df["Shift ID"]).first()
+        shift_totals["Shift First Time on Site"] = df.groupby("Shift ID")["Time on Site"].transform("min").groupby(df["Shift ID"]).first()
         shift_totals["Shift Last Time off Site"] = df.groupby("Shift ID")["Time off Site"].transform("max").groupby(df["Shift ID"]).first()
         shift_totals["Shift Home Time"] = df.groupby("Shift ID")["Home Time"].transform("max").groupby(df["Shift ID"]).first()
 
