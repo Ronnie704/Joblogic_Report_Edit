@@ -346,6 +346,11 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             })
         )
 
+        shift_totals["Shift First Job Travel"] = df.groupby("Shift ID")["Job Travel"].transform("min").groupby(df["Shift ID"]).first()
+        shift_totals["Shift First Time on Site"] = df.groupby("Shift ID")["Time on Site").transform("min").groupby(df["Shift ID"]).first()
+        shift_totals["Shift Last Time off Site"] = df.groupby("Shift ID")["Time off Site"].transform("max").groupby(df["Shift ID"]).first()
+        shift_totals["Shift Home Time"] = df.groupby("Shift ID")["Home Time"].transform("max").groupby(df["Shift ID"]).first()
+
         shift_totals["First Job to Last Job Hours"] = (
             (shift_totals["Last Time off Site"] - shift_totals["First Time on Site"])
             .dt.total_seconds() / 3600
@@ -488,7 +493,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         #---------------------------------------------------------------------------------------
 
-        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI", "Overhead", "Shift Hours", "First Job to Last Job Hours",]], on="Shift ID")
+        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI", "Overhead", "Shift Hours", "First Job to Last Job Hours", "Shift First Job Travel", "Shift First Time on Site", "Shift Last Time off Site", "Shift Home Time",]], on="Shift ID")
 
         df["Overhead without Wage"] = pd.NA 
         df["Total Cost"] = pd.NA
@@ -575,7 +580,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             df.loc[office_summary, "Bonus"] = 0
         #------------------------------------------------------------------------------
 
-        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Overhead without Wage", "Total Cost", "Total Pay", "Wage/Pension/NI", "Shift Hours", "First Job to Last Job Hours",]:
+        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Overhead without Wage", "Total Cost", "Total Pay", "Wage/Pension/NI", "Shift Hours", "First Job to Last Job Hours", "Shift First Job Travel", "Shift First Time on Site", "Shift Last Time off Site", "Shift Home Time",]:
             df.loc[~mask_summary, col] = pd.NA
             
         df = df.drop(columns=["Shift ID", "_job_hours"])
