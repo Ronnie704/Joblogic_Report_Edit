@@ -615,6 +615,33 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Day Hours": "On Site Hours",
     })
 
+    ASSISTANTS_FOR_ROLE = {
+        "Airon Paul",
+        "Arron Barnes",
+        "Iosua Caloro",
+        "Jair Gomes",
+        "Jake LeBeau",
+        "Jamie Scott",
+        "Jordon Utter",
+    }
+
+    SUBCONTRACTORS_FOR_ROLE = {
+        "Kevin Aubignac",
+        "Ellis Russel",
+        "Greg Czubak",
+        "Mike Weare",
+    }
+
+    all_engineers = set(ENGINEER_RATE_WEEKDAY.keys())
+    ENGINEERS_FOR_ROLE = all_engineers - ASSISTANTS_FOR_ROLE - SUBCONTRACTORS_FOR_ROLE
+
+    df["Role"] = "Unknown"
+    eng_clean = df["Engineer"].astype(str).str.strip()
+
+    df.loc[eng_clean.isin(ENGINEERS_FOR_ROLE), "Role"] = "Engineer"
+    df.loc[eng_clean.isin(ASSISTANTS_FOR_ROLE), "Role"] = "Assistant"
+    df.loc[eng_clean.isin(SUBCONTRACTORS_FOR_ROLE), "Role"] = "Sub Contractors"
+
     desired_order = [
         "Job Number",
         "Quote Number",
