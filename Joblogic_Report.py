@@ -358,6 +358,73 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         
         shift_totals["Day Part Profit"] = shift_totals["Day Sell"] - shift_totals["Day Cost"]
 
+        from datetime import date, timedelta
+
+        def compute_pay_month(day):
+            if pd.isna(day):
+                return pd.NA
+
+            d = pd.to_datetime(day).date()
+            y, m = d.year, d.month 
+
+            if m == 12:
+                first_next = date(y + 1, 1, 1)
+            else:
+                first_next = date(y, m + 1, 1)
+            last_day = first_next - timedelta(days=1)
+
+            cur = last_day - timedelta(days=2)
+            end = None
+            while cur.weekday() == m:
+                if cur.weekday() == 0:
+                    end = cur
+                    break
+                cur -= timedelta(days=1)
+            if end is None:
+                cur = last_day
+                while cur.month == m and cur.weekday() != 0:
+                    cur -= timedelta(days=1)
+                end = cur
+            if m == 1:
+                py, pm = y, m - 1, 12
+            else:
+                py, pm = y, m - 1
+            if pm == 12:
+                prev_first_next = date(py, pm + 1, 1, 1)
+            else:
+                prev_first_next = date(py, pm + 1, 1)
+            prev_last = prev_first_next - timedelta(days=1)
+
+            cur2 = prev_last - timedelta(days=1)
+            start = None
+            while cur2.weekday() == pm:
+                if cur2.weekday() == 1 and (cur2 + timedelta(days=1)).month == pm:
+                    start = cur2
+                    break
+                cur2 -= timedelta(days=1)
+            if start is None:
+                cur2 = prev_last
+                while cur2.month == pm and cur2.weekday() != 1:
+                    cur2 -= timedelta(days=1)
+                start = cur2
+
+            if d < start:
+                if pm == 1:
+                    yy, mm = py - 1, 12
+                else:
+                    yy, mm = py, pm - 1
+            elif d > end:
+                if m == 12:
+                    yy, mm = y + 1, 1
+                else:
+                    yy, mm = y, m + 1
+            else:
+                yy, mm =y, m
+            return f"{yy}-{mm:02d}"
+
+        shift_totals["Pay Month"] = shift_totals["Real Date"].apply(compute_pay_month)
+            
+        
         OVERHEAD_VALUE = 471.03
         
         shift_totals["Overhead"] = np.where(
@@ -493,7 +560,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         #---------------------------------------------------------------------------------------
 
-        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI", "Overhead", "Shift Hours", "First Job to Last Job Hours", "Shift First Job Travel", "Shift First Time on Site", "Shift Last Time off Site", "Shift Home Time",]], on="Shift ID")
+        df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI", "Overhead", "Shift Hours", "First Job to Last Job Hours", "Shift First Job Travel", "Shift First Time on Site", "Shift Last Time off Site", "Shift Home Time", "Pay Month",]], on="Shift ID")
 
         df["Overhead without Wage"] = pd.NA 
         df["Total Cost"] = pd.NA
