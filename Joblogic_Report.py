@@ -365,63 +365,78 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                 return pd.NA
 
             d = pd.to_datetime(day).date()
-            y, m = d.year, d.month 
+            y, m = d.year, d.month
 
+            # --- end of pay month: last Monday in month with Tue+Wed still in month ---
             if m == 12:
                 first_next = date(y + 1, 1, 1)
             else:
                 first_next = date(y, m + 1, 1)
             last_day = first_next - timedelta(days=1)
 
+            # start from last_day - 2 so Mon has Tue+Wed still in the same month
             cur = last_day - timedelta(days=2)
             end = None
-            while cur.weekday() == m:
-                if cur.weekday() == 0:
+            while cur.month == m:
+                if cur.weekday() == 0:  # Monday
                     end = cur
                     break
                 cur -= timedelta(days=1)
             if end is None:
+                # fallback: just last Monday in month
                 cur = last_day
                 while cur.month == m and cur.weekday() != 0:
                     cur -= timedelta(days=1)
                 end = cur
+
+            # --- previous month y, m-1 ---
             if m == 1:
-                py, pm = y, m - 1, 12
+                py, pm = y - 1, 12
             else:
                 py, pm = y, m - 1
+
             if pm == 12:
-                prev_first_next = date(py, pm + 1, 1, 1)
+                prev_first_next = date(py + 1, 1, 1)
             else:
                 prev_first_next = date(py, pm + 1, 1)
             prev_last = prev_first_next - timedelta(days=1)
 
+            # start = last Tuesday in previous month with a Wednesday still in that month
             cur2 = prev_last - timedelta(days=1)
             start = None
-            while cur2.weekday() == pm:
-                if cur2.weekday() == 1 and (cur2 + timedelta(days=1)).month == pm:
+            while cur2.month == pm:
+                if cur2.weekday() == 1 and (cur2 + timedelta(days=1)).month == pm:  # Tuesday & next day still in month
                     start = cur2
                     break
                 cur2 -= timedelta(days=1)
             if start is None:
+                # fallback: last Tuesday of previous month
                 cur2 = prev_last
                 while cur2.month == pm and cur2.weekday() != 1:
                     cur2 -= timedelta(days=1)
                 start = cur2
 
+            # --- decide which pay month this date belongs to ---
             if d < start:
+                # belongs to pay month BEFORE previous month
                 if pm == 1:
                     yy, mm = py - 1, 12
                 else:
                     yy, mm = py, pm - 1
             elif d > end:
+                # belongs to next pay month
                 if m == 12:
                     yy, mm = y + 1, 1
                 else:
                     yy, mm = y, m + 1
             else:
-                yy, mm =y, m
+                # belongs to current calendar month
+                yy, mm = y, m
+
             return f"{yy}-{mm:02d}"
 
+        # make sure Real Date exists for shifts (from Shift Start)
+        shift_totals["Real Date"] = shift_totals["Shift Start"].dt.date
         shift_totals["Pay Month"] = shift_totals["Real Date"].apply(compute_pay_month)
             
         
