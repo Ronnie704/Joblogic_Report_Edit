@@ -619,6 +619,31 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         df.loc[mask_summary, "Bonus"] = np.select(conditions, choices, default=0)
 
+        # -------------------- TOTAL COST PER JOB -------------------------
+        if {
+            "Shift ID", "Labour", "Day Labour", "Total Cost", "Job Number"
+        }.issubset(df.columns):
+
+            shift_total_cost = df.groupby("Shift ID")["Total Cost"].transform("max").fillna(0)
+            Shift_day_labour = df.groupby("Shift ID")["Day Labour"].transform("max").fillna(0)
+
+            cost_rate = np.where(
+                shift_day_labour > 0,
+                shift_total_cost / shift_day_labour,
+                0.0
+            )
+
+            df["Row Cost"] = (df["Labour"].fillna(0) * cost_rate).round(2)
+
+            job_total_cost = df.groupby("Job Number")["Row Cost"].transform("sum").round(2)
+
+            df["Total Cost per Job"] = pd.NA
+            job_summary_idx = df.grooupby("Job Number").tail(1).index
+            mask_job_summary = df.index.isin(job_summary_isx)
+            df.loc[mask_job_summary, "Total Cost per Job"] = job_total_cost.loc[mask_job_summary]
+        else:
+            df["Row Cost"] = pd.NA
+            df["Total Cost per Job"] = pd.NA
         #------------------------------------------------------------------------------
         # If Only Office Visit in a day 
         if {"Shift ID", "Job Type"}.issubset(df.columns):
