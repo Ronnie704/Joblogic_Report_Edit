@@ -639,7 +639,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
             df["Total Cost per Job"] = pd.NA
             job_summary_idx = df.groupby("Job Number").tail(1).index
-            mask_job_summary = df.index.isin(job_summary_isx)
+            mask_job_summary = df.index.isin(job_summary_idx)
             df.loc[mask_job_summary, "Total Cost per Job"] = job_total_cost.loc[mask_job_summary]
         else:
             df["Row Cost"] = pd.NA
