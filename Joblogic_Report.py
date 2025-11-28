@@ -751,6 +751,11 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[eng_clean.isin(ASSISTANTS_CLEAN), "Role"] = "Assistant"
     df.loc[eng_clean.isin(SUBCONTRACTORS_CLEAN), "Role"] = "Sub Contractors"
 
+    cols_to_remove = [
+        "Total Cost per Job",
+    ]
+    df = df.drop(columns=[c for c in cols_toremove if c in df.columns], errors="ignore")
+
     desired_order = [
         "Job Number",
         "Quote Number",
