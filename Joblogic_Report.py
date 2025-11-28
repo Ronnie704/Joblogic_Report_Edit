@@ -625,7 +625,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         }.issubset(df.columns):
 
             shift_total_cost = df.groupby("Shift ID")["Total Cost"].transform("max").fillna(0)
-            Shift_day_labour = df.groupby("Shift ID")["Day Labour"].transform("max").fillna(0)
+            shift_day_labour = df.groupby("Shift ID")["Day Labour"].transform("max").fillna(0)
 
             cost_rate = np.where(
                 shift_day_labour > 0,
