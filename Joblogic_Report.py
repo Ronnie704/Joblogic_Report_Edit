@@ -638,7 +638,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             job_total_cost = df.groupby("Job Number")["Row Cost"].transform("sum").round(2)
 
             df["Total Cost per Job"] = pd.NA
-            job_summary_idx = df.grooupby("Job Number").tail(1).index
+            job_summary_idx = df.groupby("Job Number").tail(1).index
             mask_job_summary = df.index.isin(job_summary_isx)
             df.loc[mask_job_summary, "Total Cost per Job"] = job_total_cost.loc[mask_job_summary]
         else:
