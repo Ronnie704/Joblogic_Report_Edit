@@ -754,7 +754,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     cols_to_remove = [
         "Total Cost per Job",
     ]
-    df = df.drop(columns=[c for c in cols_toremove if c in df.columns], errors="ignore")
+    df = df.drop(columns=[c for c in cols_to_remove if c in df.columns], errors="ignore")
 
     desired_order = [
         "Job Number",
