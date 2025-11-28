@@ -29,7 +29,7 @@ ENGINEER_RATE_WEEKDAY = {
     "Greg Czubak": 0,
     "Jair Gomes": 15,
     "Jake LeBeau": 13,
-    "Jamie Scott": 0,
+    "Jamie Scott": 13,
     "Jordan Utter": 15,
     "Kevin Aubignac": 0,
     "Matt Bowden ": 14,
@@ -43,6 +43,7 @@ ENGINEER_RATE_WEEKDAY = {
     "William Mcmillan ": 18,
     "Younas": 15,
     "kieran Mbala": 14,
+    "Iosua Caloro": 12.50,
 }
 
 ENGINEER_RATE_WEEKEND = {
@@ -61,7 +62,7 @@ ENGINEER_RATE_WEEKEND = {
     "Greg Czubak": 0,
     "Jair Gomes": 35,
     "Jake LeBeau": 25,
-    "Jamie Scott": 0,
+    "Jamie Scott": 25,
     "Jordan Utter": 35,
     "Kevin Aubignac": 0,
     "Matt Bowden": 35,
