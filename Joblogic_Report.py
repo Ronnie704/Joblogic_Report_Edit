@@ -810,7 +810,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
                 # Update last_engineer ONLY from non-assistant rows
                 if (not row_is_asst) and pd.notna(eng) and str(eng).strip() != "":
-                last_engineer = eng
+                    last_engineer = eng
     else:
         df["Engineer Recall"] = pd.NA
     #--------------------------------------------------
