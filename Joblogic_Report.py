@@ -755,17 +755,18 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     #-------------Engineer Recall Logic----------------
     if {"Job Number", "Job Type", "Engineer"}.issubset(df.columns):
         job_type = df["Job Type"].astype(str).str.strip().str.upper()
-        job_num = df["Job Number"].astype(str).str.strip()
+        job_num = df["Job Number"].apply(lambda x: str(x).strip() if pd.notna(x) else "")
+        
 
         is_recall = job_type.eq("RECALL")
-        base_id = job_num,str.split("/", 1).str[0]
+        base_id = job_num.apply(lambda x: x.split("/", 1[0])
 
         df["Engineer Recall"] = pd.NA
 
         mask_original = (~is_recall) & (~job_num.str.contains("/"))
 
         originals = df.loc[mask_original, ["Job Number", "Engineer"]].copy()
-        originals["base"] = originals["Job Number"].astype(str).str.strip()
+        originals["base"] = originals["Job Number"].apply(lambda x: str(x).strip())
 
         base_to_engineer = (
             originals.drop_duplicates("base")
