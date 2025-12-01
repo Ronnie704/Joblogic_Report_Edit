@@ -754,30 +754,42 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     #-------------Engineer Recall Logic----------------
     if {"Job Number", "Job Type", "Engineer"}.issubset(df.columns):
+
+        # Clean job type
         job_type = df["Job Type"].astype(str).str.strip().str.upper()
-        job_num = df["Job Number"].apply(lambda x: str(x).strip() if pd.notna(x) else "")
-        
 
+        # Force Job Number to a clean string
+        job_num = df["Job Number"].astype(str).str.strip()
+
+        # A recall row is where Job Type == RECALL
         is_recall = job_type.eq("RECALL")
-        base_id = job_num.apply(lambda x: x.split("/", 1[0]))
 
+        # Base ID = job number before the first "/", e.g. "ABCD/001" -> "ABCD"
+        base_id = job_num.str.split("/", n=1).str[0]
+
+        # Create the column, default empty
         df["Engineer Recall"] = pd.NA
 
+        # Original jobs = NOT recall AND job number has NO "/" in it
         mask_original = (~is_recall) & (~job_num.str.contains("/"))
 
         originals = df.loc[mask_original, ["Job Number", "Engineer"]].copy()
-        originals["base"] = originals["Job Number"].apply(lambda x: str(x).strip())
+    
+        # normalise original job numbers to clean strings
+        originals["base"] = originals["Job Number"].astype(str).str.strip()
 
+        # Map base job number -> engineer
         base_to_engineer = (
             originals.drop_duplicates("base")
-            .set_index("base")["Engineer"]
-            .astype(str)
+                 .set_index("base")["Engineer"]
+                 .astype(str)
         )
 
+        # For recall rows, map base_id to the original engineer
         df.loc[is_recall, "Engineer Recall"] = base_id[is_recall].map(base_to_engineer)
+
     else:
         df["Engineer Recall"] = pd.NA
-        
     #--------------------------------------------------
 
     NIGHT_WORKERS = {
