@@ -760,7 +760,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Gavain Brown",
         "Jair Gomes",
         "Jamie Scott",
-        "Jordan Utter,
+        "Jordan Utter",
         "Mike Weare",
         "Nelson Vieira",
         "Sharick Bartley",
