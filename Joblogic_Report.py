@@ -752,6 +752,33 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[eng_clean.isin(ASSISTANTS_CLEAN), "Role"] = "Assistant"
     df.loc[eng_clean.isin(SUBCONTRACTORS_CLEAN), "Role"] = "Sub Contractors"
 
+    #-------------Engineer Recall Logic----------------
+    if {"Job Number", "Job Type", "Engineer"}.issubset(df.columns):
+        job_type = df["Job Type"].astype(str).str.strip().str.upper()
+        job_num = df["Job Number"].astype(str).str.strip()
+
+        is_recall = job_type.eq("RECALL")
+        base_id = job_num,str.split("/"), n=1).str[0]
+
+        df["Engineer Recall"] = pd.NA
+
+        mask_original = (~is_recall) & (~job_num.str.contains("/"))
+
+        originals = df.loc[mask_original, ["Job Number", "Engineer"]].copy()
+        originals["base"] = originals["Job Number"].astype(str).str.strip()
+
+        base_to_engineer = (
+            originals.drop_duplicates("base")
+            .set_index("base")["Engineer"]
+            .astype(str)
+        )
+
+        df.loc[is_recall, "Engineer Recall"] = base_id[is_recall].map(base_to_engineer)
+    else:
+        df["Engineer Recall"] = pd.NA
+        
+    #--------------------------------------------------
+
     NIGHT_WORKERS = {
         "Adrian Lewis",
         "Airon Paul",
