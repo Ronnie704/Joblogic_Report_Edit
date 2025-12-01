@@ -752,6 +752,26 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[eng_clean.isin(ASSISTANTS_CLEAN), "Role"] = "Assistant"
     df.loc[eng_clean.isin(SUBCONTRACTORS_CLEAN), "Role"] = "Sub Contractors"
 
+    NIGHT_WORKERS = {
+        "Adrian Lewis",
+        "Airon Paul",
+        "Bernard Bezuidenhout",
+        "Fabio Conceiocoa",
+        "Gavain Brown",
+        "Jair Gomes",
+        "Jamie Scott",
+        "Jordan Utter,
+        "Mike Weare",
+        "Nelson Vieira",
+        "Sharick Bartley",
+        "Younas",
+    }
+
+    eng_clean = df["Engineer"].astype(str).str.strip()
+
+    df["Shift Type"] = "Day"
+    df.loc[eng_clean.isin(NIGHT_WORKERS), "Shift Type"] = "Night"
+
     cols_to_remove = [
         "Total Cost per Job",
     ]
