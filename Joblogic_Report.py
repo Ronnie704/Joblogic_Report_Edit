@@ -755,39 +755,62 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     #-------------Engineer Recall Logic----------------
     if {"Job Number", "Job Type", "Engineer"}.issubset(df.columns):
 
-        # Clean job type
-        job_type = df["Job Type"].astype(str).str.strip().str.upper()
+        # Normalise
+        job_type_up = df["Job Type"].astype(str).str.strip().str.upper()
+        job_num_str = df["Job Number"].astype(str).str.strip()
+        eng_clean   = df["Engineer"].astype(str).str.strip()
 
-        # Force Job Number to a clean string
-        job_num = df["Job Number"].astype(str).str.strip()
+        # Assistants mask (same list as in the cost-sharing logic)
+        is_assistant = eng_clean.isin(ASSISTANTS)
 
-        # A recall row is where Job Type == RECALL
-        is_recall = job_type.eq("RECALL")
+        # Base id = bit before "/", e.g. "ABC/000" -> "ABC"
+        base_id = job_num_str.str.split("/", n=1).str[0]
+        # Suffix = bit after "/", e.g. "ABC/000" -> "000"
+        rec_suffix = job_num_str.str.split("/", n=1).str[1]
 
-        # Base ID = job number before the first "/", e.g. "ABCD/001" -> "ABCD"
-        base_id = job_num.str.split("/", n=1).str[0]
+        # Turn suffix into an integer so sort goes: original (-1), /000, /001, /002...
+        def parse_rec(x):
+            if pd.isna(x):
+                return -1  # original job (no slash) always first
+            x = str(x).strip()
+            if x == "":
+                return -1
+            try:
+                return int(x)
+            except ValueError:
+                # weird suffix, push it to the end
+                return 9999
 
-        # Create the column, default empty
+        rec_num = rec_suffix.apply(parse_rec)
+
+        # Make sure the column exists
         df["Engineer Recall"] = pd.NA
 
-        # Original jobs = NOT recall AND job number has NO "/" in it
-        mask_original = (~is_recall) & (~job_num.str.contains("/"))
+        # Helper frame for grouping
+        tmp = df.copy()
+        tmp["job_type_up"]  = job_type_up
+        tmp["base_id"]      = base_id
+        tmp["rec_num"]      = rec_num
+        tmp["is_assistant"] = is_assistant
 
-        originals = df.loc[mask_original, ["Job Number", "Engineer"]].copy()
-    
-        # normalise original job numbers to clean strings
-        originals["base"] = originals["Job Number"].astype(str).str.strip()
+        for base, idx in tmp.groupby("base_id").groups.items():
+            grp = tmp.loc[idx].sort_values("rec_num")
 
-        # Map base job number -> engineer
-        base_to_engineer = (
-            originals.drop_duplicates("base")
-                 .set_index("base")["Engineer"]
-                 .astype(str)
-        )
+            last_engineer = None  # last *non-assistant* engineer in this chain
 
-        # For recall rows, map base_id to the original engineer
-        df.loc[is_recall, "Engineer Recall"] = base_id[is_recall].map(base_to_engineer)
+            for row_idx, row in grp.iterrows():
+                jt            = row["job_type_up"]
+                eng           = row["Engineer"]
+                row_is_asst   = bool(row["is_assistant"])
 
+                # If this is a RECALL row and we have a previous non-assistant engineer
+                # AND this row itself is not an assistant, then fill Engineer Recall.
+                if jt == "RECALL" and (last_engineer is not None) and (not row_is_asst):
+                    df.at[row_idx, "Engineer Recall"] = last_engineer
+
+                # Update last_engineer ONLY from non-assistant rows
+                if (not row_is_asst) and pd.notna(eng) and str(eng).strip() != "":
+                last_engineer = eng
     else:
         df["Engineer Recall"] = pd.NA
     #--------------------------------------------------
