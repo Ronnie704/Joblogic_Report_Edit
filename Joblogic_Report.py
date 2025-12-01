@@ -759,7 +759,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         
 
         is_recall = job_type.eq("RECALL")
-        base_id = job_num.apply(lambda x: x.split("/", 1[0])
+        base_id = job_num.apply(lambda x: x.split("/", 1[0]))
 
         df["Engineer Recall"] = pd.NA
 
