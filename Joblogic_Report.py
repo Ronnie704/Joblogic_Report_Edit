@@ -730,7 +730,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Jair Gomes",
         "Jake LeBeau",
         "Jamie Scott",
-        "Jordon Utter",
+        "Jordan Utter",
     }
 
     SUBCONTRACTORS_FOR_ROLE = {
