@@ -699,7 +699,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
             df["Profit (Per Job)"] = (
                 df["Labour Profit (Per Job)"]
-                + df["Parts Profit (Per Job)]
+                + df["Parts Profit (Per Job)"]
             ).round(2)
         else:
             df["Labour Profit (Per Job)"] = pd.NA
