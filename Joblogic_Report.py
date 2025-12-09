@@ -687,6 +687,27 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
             df.loc[office_summary, "Bonus"] = 0
         #------------------------------------------------------------------------------
+        #Per Job Profit
+        if {"Labour", "Material Cost", "Material Sell", "Row Cost"}.issubset(df.columns):
+            df["Labour Profit (Per Job)"] = (
+                df["Labour"].fillna(0) - df["Row Cost"].fillna(0)
+            ).round(2)
+
+            df["Parts Profit (Per Job)"] = (
+                df["Material Sell"].fillna(0) - df["Material Cost"].fillna(0)
+            ).round(2)
+
+            df["Profit (Per Job)"] = (
+                df["Labour Profit (Per Job)"]
+                + df["Parts Profit (Per Job)]
+            ).round(2)
+        else:
+            df["Labour Profit (Per Job)"] = pd.NA
+            df["Parts Profit (Per Job)"] = pd.NA
+            df["Profit (Per Job)"] = pd.NA
+        
+
+        #------------------------------------------------------------------------------
 
         for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Overhead without Wage", "Total Cost", "Total Pay", "Wage/Pension/NI", "Shift Hours", "First Job to Last Job Hours", "Shift First Job Travel", "Shift First Time on Site", "Shift Last Time off Site", "Shift Home Time",]:
             df.loc[~mask_summary, col] = pd.NA
@@ -878,6 +899,10 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Combined Margin",
         "Total Profit",
         "Bonus",
+        "Row Cost",
+        "Labour Profit (Per Job)",
+        "Part Profit (Per Job)",
+        "Profit (Per Job)",
     ]
 
     df = df[[c for c in desired_order if c in df.columns] + [c for c in df.columns if c not in desired_order]]
