@@ -620,32 +620,31 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         df.loc[mask_summary, "Bonus"] = np.select(conditions, choices, default=0)
 
-        # -------------------- TOTAL COST PER JOB -------------------------
-        if {
-            "Shift ID", "Labour", "Day Labour", "Total Cost", "Job Number"
-        }.issubset(df.columns):
+        # -------------------- ROW COST (time-based, includes office rows) --------------------
 
-            shift_total_cost = df.groupby("Shift ID")["Total Cost"].transform("max").fillna(0)
-            shift_day_labour = df.groupby("Shift ID")["Day Labour"].transform("max").fillna(0)
+        if {"Shift ID", "_job_hours", "Total Cost"}.issubset(df.columns):
 
-            cost_rate = np.where(
-                shift_day_labour > 0,
-                shift_total_cost / shift_day_labour,
-                0.0
+            # same Total Cost for every row in a shift
+            shift_total_cost = (
+                df.groupby("Shift ID")["Total Cost"]
+                  .transform("max")
+                  .fillna(0)
             )
 
-            df["Row Cost"] = (df["Labour"].fillna(0) * cost_rate).round(2)
+            # total hours per shift (sum of on-site hours)
+            shift_hours = (
+                df.groupby("Shift ID")["_job_hours"]
+                  .transform("sum")
+            )
 
-            job_total_cost = df.groupby("Job Number")["Row Cost"].transform("sum").round(2)
-
-            df["Total Cost per Job"] = pd.NA
-            job_summary_idx = df.groupby("Job Number").tail(1).index
-            mask_job_summary = df.index.isin(job_summary_idx)
-            df.loc[mask_job_summary, "Total Cost per Job"] = job_total_cost.loc[mask_job_summary]
+            df["Row Cost"] = 0.0
+            valid = shift_hours > 0
+            df.loc[valid, "Row Cost"] = (
+                shift_total_cost[valid] * df.loc[valid, "_job_hours"] / shift_hours[valid]
+            ).round(2)
         else:
             df["Row Cost"] = pd.NA
-            df["Total Cost per Job"] = pd.NA
-        #------------------------------------------------------------------------------
+        # -------------------------------------------------------------------------------------
         # If Only Office Visit in a day 
         if {"Shift ID", "Job Type"}.issubset(df.columns):
             status_upper = df["Job Type"].astype(str).str.strip().str.upper()
