@@ -620,31 +620,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         df.loc[mask_summary, "Bonus"] = np.select(conditions, choices, default=0)
 
-        # -------------------- ROW COST (time-based, includes office rows) --------------------
-
-        if {"Shift ID", "_job_hours", "Total Cost"}.issubset(df.columns):
-
-            # same Total Cost for every row in a shift
-            shift_total_cost = (
-                df.groupby("Shift ID")["Total Cost"]
-                  .transform("max")
-                  .fillna(0)
-            )
-
-            # total hours per shift (sum of on-site hours)
-            shift_hours = (
-                df.groupby("Shift ID")["_job_hours"]
-                  .transform("sum")
-            )
-
-            df["Row Cost"] = 0.0
-            valid = shift_hours > 0
-            df.loc[valid, "Row Cost"] = (
-                shift_total_cost[valid] * df.loc[valid, "_job_hours"] / shift_hours[valid]
-            ).round(2)
-        else:
-            df["Row Cost"] = pd.NA
-        # -------------------------------------------------------------------------------------
         # If Only Office Visit in a day 
         if {"Shift ID", "Job Type"}.issubset(df.columns):
             status_upper = df["Job Type"].astype(str).str.strip().str.upper()
@@ -686,6 +661,31 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
             df.loc[office_summary, "Bonus"] = 0
         #------------------------------------------------------------------------------
+        # -------------------- ROW COST (time-based, includes office rows) --------------------
+
+        if {"Shift ID", "_job_hours", "Total Cost"}.issubset(df.columns):
+
+            # same Total Cost for every row in a shift
+            shift_total_cost = (
+                df.groupby("Shift ID")["Total Cost"]
+                  .transform("max")
+                  .fillna(0)
+            )
+
+            # total hours per shift (sum of on-site hours)
+            shift_hours = (
+                df.groupby("Shift ID")["_job_hours"]
+                  .transform("sum")
+            )
+
+            df["Row Cost"] = 0.0
+            valid = shift_hours > 0
+            df.loc[valid, "Row Cost"] = (
+                shift_total_cost[valid] * df.loc[valid, "_job_hours"] / shift_hours[valid]
+            ).round(2)
+        else:
+            df["Row Cost"] = pd.NA
+        # -------------------------------------------------------------------------------------
         #Per Job Profit
         if {"Labour", "Material Cost", "Material Sell", "Row Cost"}.issubset(df.columns):
             df["Labour Profit (Per Job)"] = (
