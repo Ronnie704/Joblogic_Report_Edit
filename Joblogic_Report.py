@@ -44,6 +44,7 @@ ENGINEER_RATE_WEEKDAY = {
     "Younas": 15,
     "kieran Mbala": 14,
     "Iosua Caloro": 12.50,
+    "Stefan Caloro": 12.50,
 }
 
 ENGINEER_RATE_WEEKEND = {
@@ -76,6 +77,8 @@ ENGINEER_RATE_WEEKEND = {
     "William Mcmillan ": 35,
     "Younas": 35,
     "kieran Mbala": 35,
+    "Iosua Caloro": 25,
+    "Stefan Caloro": 25,
 }
 
 #
