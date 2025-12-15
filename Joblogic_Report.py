@@ -282,6 +282,8 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             "Airon Paul",
             "Arron Barnes",
             "Iosua Caloro",
+            "Stefan Caloro",
+            "Diogo Barroso",
             "Jair Gomes",
             "Jake LeBeau",
             "Jamie Scott",
@@ -747,10 +749,12 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Airon Paul",
         "Arron Barnes",
         "Iosua Caloro",
+        "Stefan Caloro",
         "Jair Gomes",
         "Jake LeBeau",
         "Jamie Scott",
         "Jordan Utter",
+        "Diogo Barroso",
     }
 
     SUBCONTRACTORS_FOR_ROLE = {
@@ -848,6 +852,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Nelson Vieira",
         "Sharick Bartley",
         "Younas",
+        "Diogo Barroso",
     }
 
     eng_clean = df["Engineer"].astype(str).str.strip()
