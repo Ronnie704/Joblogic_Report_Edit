@@ -463,6 +463,11 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             0.0,
         ).round(2)
 
+        # --- assistants: always 0 overhead per job ---
+        ASSISTANTS_CLEAN_FOR_OVERHEAD = {name.strip() for name in ASSISTANTS}
+        assist_shift_mask = shift_totals["Engineer"].astype(str).str.strip().isin(ASSISTANTS_CLEAN_FOR_OVERHEAD)
+        shift_totals.loc[assist_shift_mask, "Overhead"] = 0.0
+
         #------------ Zero Overhead Engineers -------------------
         ZERO_OVERHEAD_ENGS = {"Chris Eland"}
         zero_overhead_shift_mask = shift_totals["Engineer"].astype(str).str.strip().isin(ZERO_OVERHEAD_ENGS)
@@ -591,6 +596,10 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df.loc[mask_summary, "Overhead without Wage"] = OVERHEAD_VALUE
         special_mask = mask_summary & df["Engineer"].astype(str).str.strip().isin(SPECIAL_ENGS)
         df.loc[special_mask, "Overhead without Wage"] = 600.0
+
+        # --- assistants: no overhead on summary line ---
+        assist_row_mask = mask_summary & df["Engineer"].astype(str).str.strip().isin(ASSISTANTS_CLEAN_FOR_OVERHEAD)
+        df.loc[assist_row_mask, "Overhead without Wage"] = 0.0
 
         zero_overhead_row_mask = mask_summary & df["Engineer"].astype(str).str.strip().isin(ZERO_OVERHEAD_ENGS)
         df.loc[zero_overhead_row_mask, "Overhead without Wage"] = 0.0
