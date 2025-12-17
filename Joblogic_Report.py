@@ -807,7 +807,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
     if cutoff:
         row_date = (
-            pd.to_datetime(df["Real Date (Each Row)" in df.columns
+            pd.to_datetime(df["Real Date (Each Row)"] in df.columns
             if "Real Date (Each Row)" in df.columns
             else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
         )
