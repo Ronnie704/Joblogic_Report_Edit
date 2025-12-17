@@ -833,8 +833,8 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                            
         is_assistant = eng_clean.isin(ASSISTANTS)
 
-        cutoff = ASSISTANT_CUTOFFS.get("Airon Paul") & row_date.notna()
-        if cutoff:
+        cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
+        if cutoff is not None:
             is_airon = eng_clean.eq("Airon Paul") & row_date.notna()
             is_assistant = is_assistant & ~(is_airon & (row_date >= cutoff))
         
