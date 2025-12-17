@@ -514,7 +514,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             airon_paid = (eng_shift == "Airon Paul") & (shift_date >= cutoff)
 
             hourly_rate.loc[airon_paid & (~is_weekend)] = 15.0
-            houlry_rate.loc[airon_paid & (is_weekend)] = 35.0
+            hourly_rate.loc[airon_paid & (is_weekend)] = 35.0
 
         total_duration = (
             (shift_totals["Shift End"] - shift_totals["Shift Start"])
