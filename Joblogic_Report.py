@@ -487,7 +487,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         if cutoff is not None:
             shift_date = shift_totals["Shift Start"].dt.date
-            assist_shift_mask = assist_shift_mask & ~((eng_shift == "Airon Paul") & (Shift_date >= cutoff))
+            assist_shift_mask = assist_shift_mask & ~((eng_shift == "Airon Paul") & (shift_date >= cutoff))
 
         shift_totals.loc[assist_shift_mask, "Overhead"] = 0.0
 
