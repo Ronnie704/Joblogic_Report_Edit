@@ -389,8 +389,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         
         shift_totals["Day Part Profit"] = shift_totals["Day Sell"] - shift_totals["Day Cost"]
 
-        from datetime import date, timedelta
-
         def compute_pay_month(day):
             if pd.isna(day):
                 return pd.NA
