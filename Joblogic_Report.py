@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 
 from upload_to_drive import upload_to_drive
+from datetime import date
 
 FTP_HOST = "Ronnie789.synology.me"
 FTP_USER = os.environ.get("FTP_USER")
@@ -79,6 +80,11 @@ ENGINEER_RATE_WEEKEND = {
     "kieran Mbala": 35,
     "Iosua Caloro": 0,
     "Stefan Caloro": 0,
+}
+
+ASSISTANT_CUTOFFS = {
+    #Assistant BEFORE this date, Engineer On and After
+    "Airon Paul": date(2025,12,10),
 }
 
 #
@@ -294,7 +300,17 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         }
 
         eng_clean = df["Engineer"].astype(str).str.strip()
+        row_date = (
+            pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
+            if "Real Date (Each Row)" in df.columns
+            else df["Job Travel"].dt.date
+        )
         is_assistant = eng_clean.isin(ASSISTANTS)
+
+        cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
+        if cutoff:
+            is_airon = eng_clean.eq("Airon Paul") & row_date.notna()
+            is_assistant = is_assistant & ~(is_airon & (row_date >= cutoff))
 
         # per-job: does this job have at least one non-assistant?
         has_main = (~is_assistant).groupby(df["Job Number"]).transform("any")
@@ -788,6 +804,17 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[eng_clean.isin(ASSISTANTS_CLEAN), "Role"] = "Assistant"
     df.loc[eng_clean.isin(SUBCONTRACTORS_CLEAN), "Role"] = "Sub Contractors"
 
+    cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
+    if cutoff:
+        row_date = (
+            pd.to_datetime(df["Real Date (Each Row)" in df.columns
+            if "Real Date (Each Row)" in df.columns
+            else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
+        )
+        airon_mask = eng_clean.eq("Airon Paul") & row_date.notna()
+        df.loc[airon_mask & (row_date >= cutoff), "Role"] = "Engineer"
+        df.loc[airon_mask & (row_date < cutoff), "Role"] = "Assistant"
+
     #-------------Engineer Recall Logic----------------
     if {"Job Number", "Job Type", "Engineer"}.issubset(df.columns):
 
@@ -797,8 +824,20 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         eng_clean   = df["Engineer"].astype(str).str.strip()
 
         # Assistants mask (same list as in the cost-sharing logic)
+        row_date = (
+            pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
+            if "Real Date (Each Row)" in df.columns
+            else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
+        )
+                           
         is_assistant = eng_clean.isin(ASSISTANTS)
 
+        cutoff = ASSISTANT_CUTOFFS.get("Airon Paul") & row_date.notna()
+        if cutoff:
+            is_airon = eng_clean.eq("Airon Paul") & row_date.notna()
+            is_assistant = is_assistant & ~(is_airon & (row_date >= cutoff))
+        
+        
         # Base id = bit before "/", e.g. "ABC/000" -> "ABC"
         base_id = job_num_str.str.split("/", n=1).str[0]
         # Suffix = bit after "/", e.g. "ABC/000" -> "000"
