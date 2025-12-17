@@ -132,6 +132,15 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         mask = df["Job Travel"].isna() & df["Time on Site"].notna()
         df.loc[mask, "Job Travel"] = df.loc[mask, "Time on Site"]
 
+    #----------------------------Remove future rows
+    today = date.today()
+
+    date_cols = [c for c in ["Job Travel", "Time on Site", "Time off Site", "Home Time"] if c in df.columns]
+
+    if date_cols:
+        row_max = df[date_cols].max(axis=1)
+        df = df.loc[row_max.isna() | (row_max.dt.date <= today)].copy()
+    #----------------------------------------------
     # Sort by Engineer (A–Z)
     if {"Engineer", "Job Travel"}.issubset(df.columns):
         df = df.sort_values(
