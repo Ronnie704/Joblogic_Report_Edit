@@ -807,10 +807,11 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
     if cutoff:
         row_date = (
-            pd.to_datetime(df["Real Date (Each Row)"] in df.columns
+            pd.to_datetime(df["Real Date (Each Row)"] errors="coerce").dt.date
             if "Real Date (Each Row)" in df.columns
             else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
         )
+            
         airon_mask = eng_clean.eq("Airon Paul") & row_date.notna()
         df.loc[airon_mask & (row_date >= cutoff), "Role"] = "Engineer"
         df.loc[airon_mask & (row_date < cutoff), "Role"] = "Assistant"
