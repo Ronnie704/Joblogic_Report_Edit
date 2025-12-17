@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 from upload_to_drive import upload_to_drive
-from datetime import date
+from datetime import date, timedelta
 
 FTP_HOST = "Ronnie789.synology.me"
 FTP_USER = os.environ.get("FTP_USER")
