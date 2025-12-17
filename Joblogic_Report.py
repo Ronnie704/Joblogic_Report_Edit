@@ -480,8 +480,15 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         ).round(2)
 
         # --- assistants: always 0 overhead per job ---
-        ASSISTANTS_CLEAN_FOR_OVERHEAD = {name.strip() for name in ASSISTANTS}
-        assist_shift_mask = shift_totals["Engineer"].astype(str).str.strip().isin(ASSISTANTS_CLEAN_FOR_OVERHEAD)
+        cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
+        eng_shift = shift_totals["Engineer"].astype(str).str.strip()
+
+        assist_shift_mask = eng_shift.isin(ASSISTANTS)
+
+        if cutoff is not None:
+            shift_date = shift_totals["Shift Start"].dt.date
+            assist_shift_mask = assist_shift_mask & ~((eng_shift == "Airon Paul") & (Shift_date >= cutoff))
+
         shift_totals.loc[assist_shift_mask, "Overhead"] = 0.0
 
         #------------ Zero Overhead Engineers -------------------
@@ -498,6 +505,16 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         hourly_rate = weekday_rate.copy()
         hourly_rate[is_weekend & weekend_rate.notna()] = weekend_rate[is_weekend & weekend_rate.notna()]
         hourly_rate = hourly_rate.fillna(0)
+
+        cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
+        if cutoff is not None:
+            shift_date = shift_totals["Shift Start"].dt.date
+            eng_shift = shift_totals["Engineer"].astype(str).str.strip()
+
+            airon_paid = (eng_shift == "Airon Paul") & (shift_date >= cutoff)
+
+            hourly_rate.loc[airon_paid & (~is_weekend)] = 15.0
+            houlry_rate.loc[airon_paid & (is_weekend)] = 35.0
 
         total_duration = (
             (shift_totals["Shift End"] - shift_totals["Shift Start"])
@@ -614,8 +631,17 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df.loc[special_mask, "Overhead without Wage"] = 600.0
 
         # --- assistants: no overhead on summary line ---
-        assist_row_mask = mask_summary & df["Engineer"].astype(str).str.strip().isin(ASSISTANTS_CLEAN_FOR_OVERHEAD)
-        df.loc[assist_row_mask, "Overhead without Wage"] = 0.0
+        cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
+        eng_row = df["Engineer"].astype(str).str.strip()
+
+        assist_row = eng_row.isin(ASSISTANTS)
+
+        if cutoff is not None:
+            row_date = pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
+            assist_row = assist_row & ~((eng_row == "Airon Paul") & (row_date >= cutoff))
+
+        assist_row_mask = mask_summary & assist_row
+        df.loc[assist_row_mask,"Overhead without Wage"] = 0.0
 
         zero_overhead_row_mask = mask_summary & df["Engineer"].astype(str).str.strip().isin(ZERO_OVERHEAD_ENGS)
         df.loc[zero_overhead_row_mask, "Overhead without Wage"] = 0.0
