@@ -352,10 +352,9 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         )
         is_assistant = eng_clean.isin(ASSISTANTS)
 
-        cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
-        if cutoff:
-            is_airon = eng_clean.eq("Airon Paul") & row_date.notna()
-            is_assistant = is_assistant & ~(is_airon & (row_date >= cutoff))
+        for name, cutoff in ASSISTANT_CUTOFFS.items():
+            m = eng_clean.eq(name) & row_date.notna()
+            is_assistant = is_assistant & ~(m & (row_date >= cutoff))
 
         # per-job: does this job have at least one non-assistant?
         has_main = (~is_assistant).groupby(df["Job Number"]).transform("any")
@@ -523,16 +522,13 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         ).round(2)
 
         # --- assistants: always 0 overhead per job ---
-        cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
-        eng_shift = shift_totals["Engineer"].astype(str).str.strip()
+       shift_date = shift_totals["Shift Start"].dt.date
+       assist_shift_mask = eng_shift.isin(ASSISTANTS)
+       for name, cutoff in ASSISTANT_CUTOFFS.items():
+           m = eng_shift.eq(name) & shift_date.notna()
+           assist_shift_mask = assist_shift_mask & ~(m & (shift_date >= cutoff))
 
-        assist_shift_mask = eng_shift.isin(ASSISTANTS)
-
-        if cutoff is not None:
-            shift_date = shift_totals["Shift Start"].dt.date
-            assist_shift_mask = assist_shift_mask & ~((eng_shift == "Airon Paul") & (shift_date >= cutoff))
-
-        shift_totals.loc[assist_shift_mask, "Overhead"] = 0.0
+       shift_totals.loc[assist_shift_mask,"Overhead"] = 0.0
 
         #------------ Zero Overhead Engineers -------------------
         ZERO_OVERHEAD_ENGS = {"Chris Eland"}
@@ -963,10 +959,9 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                            
         is_assistant = eng_clean.isin(ASSISTANTS)
 
-        cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
-        if cutoff is not None:
-            is_airon = eng_clean.eq("Airon Paul") & row_date.notna()
-            is_assistant = is_assistant & ~(is_airon & (row_date >= cutoff))
+        for name, cutoff in ASSISTANT_CUTOFFS.items():
+            m = eng_clean.eq(name) & row_date.notna()
+            is_assistant = is_assistant & ~(m & (row_date >= cutoff))
         
         
         # Base id = bit before "/", e.g. "ABC/000" -> "ABC"
