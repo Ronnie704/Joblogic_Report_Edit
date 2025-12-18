@@ -532,7 +532,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         shift_date = shift_totals["Shift Start"].dt.date
         eng_shift = shift_totals["Engineer"].astype(str).str.strip()
 
-        for eng, (eff_date, new_weekday, new_weekend) in RATE_CHANGE.items():
+        for eng, (eff_date, new_weekday, new_weekend) in RATE_CHANGES.items():
             m = (eng_shift == eng) & (shift_date >= eff_date)
 
             hourly_rate.loc[m & (~is_weekend)] = float(new_weekday)
