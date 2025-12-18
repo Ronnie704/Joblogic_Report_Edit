@@ -880,7 +880,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df.loc[airon_mask & (row_date < cutoff), "Role"] = "Assistant"
 
 
-        cutoff = ASSISTANT_CUTOFFS.get("kieran Mbala")
+    cutoff = ASSISTANT_CUTOFFS.get("kieran Mbala")
     if cutoff:
         row_date = (
             pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
@@ -892,7 +892,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df.loc[kieran_mask & (row_date >= cutoff), "Role"] = "Engineer"
         df.loc[kieran_mask & (row_date < cutoff), "Role"] = "Assistant"
 
-            cutoff = ASSISTANT_CUTOFFS.get("Sam Eade")
+    cutoff = ASSISTANT_CUTOFFS.get("Sam Eade")
     if cutoff:
         row_date = (
             pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
