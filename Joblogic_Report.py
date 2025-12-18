@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 
 from upload_to_drive import upload_to_drive
+from datetime import date, timedelta
 
 FTP_HOST = "Ronnie789.synology.me"
 FTP_USER = os.environ.get("FTP_USER")
@@ -17,15 +18,15 @@ ENGINEER_RATE_WEEKDAY = {
     "Adrian Lewis": 15,
     "Airon Paul": 0,
     "Arron Barnes": 0,
-    "Bernard Bezuidenhout": 16.50,
-    "Bradley Greener-Simon": 16.50,
+    "Bernard Bezuidenhout": 15,
+    "Bradley Greener-Simon": 15.00,
     "Charlie Rowley": 16.00,
     "Chris Eland": 0,
     "David Head": 0,
     "Ellis Russell": 0,
-    "Fabio Conceiocoa": 20,
-    "Gary Brunton": 19,
-    "Gavain Brown ": 20,
+    "Fabio Conceiocoa": 17.50,
+    "Gary Brunton": 17.00,
+    "Gavain Brown ": 17.50,
     "Greg Czubak": 0,
     "Jair Gomes": 0,
     "Jake LeBeau": 0,
@@ -34,17 +35,23 @@ ENGINEER_RATE_WEEKDAY = {
     "Kevin Aubignac": 0,
     "Matt Bowden ": 14,
     "Mike Weare": 0,
-    "Nelson Vieira": 20,
+    "Nelson Vieira": 17.50,
     "Paul Preston": 15,
     "Richard Lambert": 14.5,
-    "Sam Eade": 14,
-    "Sharick Bartley": 15,
+    "Sam Eade": 0,
+    "Sharick Bartley": 0,
     "Tom Greener-Simon": 15,
     "William Mcmillan ": 18,
-    "Younas": 15,
-    "kieran Mbala": 14,
+    "Younas": 0,
+    "kieran Mbala": 0,
     "Iosua Caloro": 0,
     "Stefan Caloro": 0,
+    "Oskars Perkons": 0,
+    "Mikael Williams": 0,
+    "Jack Morbin": 0,
+    "Alfie Pateman": 0,
+    "Jaydan Brown": 0,
+    "Bartosz Skalbania": 0,
 }
 
 ENGINEER_RATE_WEEKEND = {
@@ -71,14 +78,43 @@ ENGINEER_RATE_WEEKEND = {
     "Nelson Vieira": 35,
     "Paul Preston": 35,
     "Richard Lambert": 35,
-    "Sam Eade": 35,
-    "Sharick Bartley": 35,
+    "Sam Eade": 0,
+    "Sharick Bartley": 0,
     "Tom Greener-Simon": 35,
     "William Mcmillan ": 35,
-    "Younas": 35,
-    "kieran Mbala": 35,
+    "Younas": 0,
+    "kieran Mbala": 0,
     "Iosua Caloro": 0,
     "Stefan Caloro": 0,
+    "Oskars Perkons": 0,
+    "Mikael Williams": 0,
+    "Jack Morbin": 0,
+    "Alfie Pateman": 35,
+    "Jaydan Brown": 35,
+    "Bartosz Skalbania": 0,
+}
+
+ASSISTANT_CUTOFFS = {
+    #Assistant BEFORE this date, Engineer On and After
+    "Airon Paul": date(2025,12,10),
+    "kieran Mbala": date(2025, 6, 3),
+    "Sam Eade": date(2024,1,4),
+    "Sharick Bartley": date(2025,4,8),
+    "Younas": date(2025,4,22),
+}
+
+RATE_CHANGES = {
+    "Bernard Bezuidenhout": (date(2025,6,24), 16.50,35),
+    "kieran Mbala": (date(2025, 6, 3), 14.00, 35.00),
+    "Sam Eade": (date(2024,1,4), 12.50, 35.00),
+    "Sam Eade": (date(2025,8,26), 14.00, 35.00),
+    "Gavain Brown ": (date(2025,6,24), 20.00, 35.00),
+    "Nelson Vieira": (date(2025,6,24), 20.00, 35.00),
+    "Gary Brunton": (date(2024,9,24), 19.00, 35.00),
+    "Fabio Conceiocoa": (date(2025,6,24), 20.00, 35.00),
+    "Bradley Greener-Simon": (date(2025,5,27), 16.50, 35.00),
+    "Sharick Bartley": (date(2025,4,8), 15.00, 35.00),
+    "Younas": (date(2025,4,22), 15.00, 35.00),
 }
 
 #
@@ -126,6 +162,15 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         mask = df["Job Travel"].isna() & df["Time on Site"].notna()
         df.loc[mask, "Job Travel"] = df.loc[mask, "Time on Site"]
 
+    #----------------------------Remove future rows
+    today = date.today()
+
+    date_cols = [c for c in ["Job Travel", "Time on Site", "Time off Site", "Home Time"] if c in df.columns]
+
+    if date_cols:
+        row_max = df[date_cols].max(axis=1)
+        df = df.loc[row_max.isna() | (row_max.dt.date <= today)].copy()
+    #----------------------------------------------
     # Sort by Engineer (A–Z)
     if {"Engineer", "Job Travel"}.issubset(df.columns):
         df = df.sort_values(
@@ -291,10 +336,26 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             "Jake LeBeau",
             "Jamie Scott",
             "Jordan Utter",
+            "Oskars Perkons",
+            "Mikael Williams",
+            "Jack Morbin",
+            "kieran Mbala",
+            "Sharick Bartley",
+            "Younas",
         }
 
         eng_clean = df["Engineer"].astype(str).str.strip()
+        row_date = (
+            pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
+            if "Real Date (Each Row)" in df.columns
+            else df["Job Travel"].dt.date
+        )
         is_assistant = eng_clean.isin(ASSISTANTS)
+
+        cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
+        if cutoff:
+            is_airon = eng_clean.eq("Airon Paul") & row_date.notna()
+            is_assistant = is_assistant & ~(is_airon & (row_date >= cutoff))
 
         # per-job: does this job have at least one non-assistant?
         has_main = (~is_assistant).groupby(df["Job Number"]).transform("any")
@@ -363,8 +424,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         ).fillna(0).round(2)
         
         shift_totals["Day Part Profit"] = shift_totals["Day Sell"] - shift_totals["Day Cost"]
-
-        from datetime import date, timedelta
 
         def compute_pay_month(day):
             if pd.isna(day):
@@ -463,6 +522,18 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             0.0,
         ).round(2)
 
+        # --- assistants: always 0 overhead per job ---
+        cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
+        eng_shift = shift_totals["Engineer"].astype(str).str.strip()
+
+        assist_shift_mask = eng_shift.isin(ASSISTANTS)
+
+        if cutoff is not None:
+            shift_date = shift_totals["Shift Start"].dt.date
+            assist_shift_mask = assist_shift_mask & ~((eng_shift == "Airon Paul") & (shift_date >= cutoff))
+
+        shift_totals.loc[assist_shift_mask, "Overhead"] = 0.0
+
         #------------ Zero Overhead Engineers -------------------
         ZERO_OVERHEAD_ENGS = {"Chris Eland"}
         zero_overhead_shift_mask = shift_totals["Engineer"].astype(str).str.strip().isin(ZERO_OVERHEAD_ENGS)
@@ -477,6 +548,25 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         hourly_rate = weekday_rate.copy()
         hourly_rate[is_weekend & weekend_rate.notna()] = weekend_rate[is_weekend & weekend_rate.notna()]
         hourly_rate = hourly_rate.fillna(0)
+
+        shift_date = shift_totals["Shift Start"].dt.date
+        eng_shift = shift_totals["Engineer"].astype(str).str.strip()
+
+        for eng, (eff_date, new_weekday, new_weekend) in RATE_CHANGES.items():
+            m = (eng_shift == eng) & (shift_date >= eff_date)
+
+            hourly_rate.loc[m & (~is_weekend)] = float(new_weekday)
+            hourly_rate.loc[m & (is_weekend)] = float(new_weekend)
+
+        cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
+        if cutoff is not None:
+            shift_date = shift_totals["Shift Start"].dt.date
+            eng_shift = shift_totals["Engineer"].astype(str).str.strip()
+
+            airon_paid = (eng_shift == "Airon Paul") & (shift_date >= cutoff)
+
+            hourly_rate.loc[airon_paid & (~is_weekend)] = 15.0
+            hourly_rate.loc[airon_paid & (is_weekend)] = 35.0
 
         total_duration = (
             (shift_totals["Shift End"] - shift_totals["Shift Start"])
@@ -591,6 +681,17 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df.loc[mask_summary, "Overhead without Wage"] = OVERHEAD_VALUE
         special_mask = mask_summary & df["Engineer"].astype(str).str.strip().isin(SPECIAL_ENGS)
         df.loc[special_mask, "Overhead without Wage"] = 600.0
+
+        # --- assistants: no overhead on summary line ---
+        eng_row = df["Engineer"].astype(str).str.strip()
+        assist_row = eng_row.isin(ASSISTANTS)
+
+        row_date = pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
+        for name, cutoff in ASSISTANT_CUTOFFS.items():
+            assist_row = assist_row & ~((eng_row == name) & (row_date >= cutoff))
+
+        assist_row_mask = mask_summary & assist_row
+        df.loc[assist_row_mask,"Overhead without Wage"] = 0.0
 
         zero_overhead_row_mask = mask_summary & df["Engineer"].astype(str).str.strip().isin(ZERO_OVERHEAD_ENGS)
         df.loc[zero_overhead_row_mask, "Overhead without Wage"] = 0.0
@@ -758,6 +859,11 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Jamie Scott",
         "Jordan Utter",
         "Diogo Barroso",
+        "Oskars Perkons",
+        "Mikael Williams",
+        "kieran Mbala",
+        "Sharick Bartley",
+        "Younas",
     }
 
     SUBCONTRACTORS_FOR_ROLE = {
@@ -779,6 +885,67 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[eng_clean.isin(ASSISTANTS_CLEAN), "Role"] = "Assistant"
     df.loc[eng_clean.isin(SUBCONTRACTORS_CLEAN), "Role"] = "Sub Contractors"
 
+    cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
+    if cutoff:
+        row_date = (
+            pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
+            if "Real Date (Each Row)" in df.columns
+            else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
+        )
+            
+        airon_mask = eng_clean.eq("Airon Paul") & row_date.notna()
+        df.loc[airon_mask & (row_date >= cutoff), "Role"] = "Engineer"
+        df.loc[airon_mask & (row_date < cutoff), "Role"] = "Assistant"
+
+
+    cutoff = ASSISTANT_CUTOFFS.get("kieran Mbala")
+    if cutoff:
+        row_date = (
+            pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
+            if "Real Date (Each Row)" in df.columns
+            else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
+        )
+            
+        kieran_mask = eng_clean.eq("kieran Mbala") & row_date.notna()
+        df.loc[kieran_mask & (row_date >= cutoff), "Role"] = "Engineer"
+        df.loc[kieran_mask & (row_date < cutoff), "Role"] = "Assistant"
+
+    cutoff = ASSISTANT_CUTOFFS.get("Sam Eade")
+    if cutoff:
+        row_date = (
+            pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
+            if "Real Date (Each Row)" in df.columns
+            else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
+        )
+            
+        Sam_mask = eng_clean.eq("Sam Eade") & row_date.notna()
+        df.loc[Sam_mask & (row_date >= cutoff), "Role"] = "Engineer"
+        df.loc[Sam_mask & (row_date < cutoff), "Role"] = "Assistant"
+
+    cutoff = ASSISTANT_CUTOFFS.get("Sharick Bartley")
+    if cutoff:
+        row_date = (
+            pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
+            if "Real Date (Each Row)" in df.columns
+            else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
+        )
+            
+        Sharick_mask = eng_clean.eq("Sharick Bartley") & row_date.notna()
+        df.loc[Sharick_mask & (row_date >= cutoff), "Role"] = "Engineer"
+        df.loc[Sharick_mask & (row_date < cutoff), "Role"] = "Assistant"
+
+    cutoff = ASSISTANT_CUTOFFS.get("Younas")
+    if cutoff:
+        row_date = (
+            pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
+            if "Real Date (Each Row)" in df.columns
+            else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
+        )
+            
+        Younas_mask = eng_clean.eq("Younas") & row_date.notna()
+        df.loc[Younas_mask & (row_date >= cutoff), "Role"] = "Engineer"
+        df.loc[Younas_mask & (row_date < cutoff), "Role"] = "Assistant"
+
     #-------------Engineer Recall Logic----------------
     if {"Job Number", "Job Type", "Engineer"}.issubset(df.columns):
 
@@ -788,8 +955,20 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         eng_clean   = df["Engineer"].astype(str).str.strip()
 
         # Assistants mask (same list as in the cost-sharing logic)
+        row_date = (
+            pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
+            if "Real Date (Each Row)" in df.columns
+            else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
+        )
+                           
         is_assistant = eng_clean.isin(ASSISTANTS)
 
+        cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
+        if cutoff is not None:
+            is_airon = eng_clean.eq("Airon Paul") & row_date.notna()
+            is_assistant = is_assistant & ~(is_airon & (row_date >= cutoff))
+        
+        
         # Base id = bit before "/", e.g. "ABC/000" -> "ABC"
         base_id = job_num_str.str.split("/", n=1).str[0]
         # Suffix = bit after "/", e.g. "ABC/000" -> "000"
@@ -856,6 +1035,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Sharick Bartley",
         "Younas",
         "Diogo Barroso",
+        "Jack Morbin",
     }
 
     eng_clean = df["Engineer"].astype(str).str.strip()
@@ -1043,5 +1223,4 @@ def process_new_files():
 
 if __name__ == "__main__":
     process_new_files()
-  
   
