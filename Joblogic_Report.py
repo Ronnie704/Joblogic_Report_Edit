@@ -18,7 +18,7 @@ ENGINEER_RATE_WEEKDAY = {
     "Adrian Lewis": 15,
     "Airon Paul": 0,
     "Arron Barnes": 0,
-    "Bernard Bezuidenhout": 16.50,
+    "Bernard Bezuidenhout": 15,
     "Bradley Greener-Simon": 16.50,
     "Charlie Rowley": 16.00,
     "Chris Eland": 0,
@@ -46,6 +46,9 @@ ENGINEER_RATE_WEEKDAY = {
     "kieran Mbala": 14,
     "Iosua Caloro": 0,
     "Stefan Caloro": 0,
+    "Oskars Perkons": 0,
+    "Mikael Williams": 0,
+    "Jack Morbin": 0,
 }
 
 ENGINEER_RATE_WEEKEND = {
@@ -80,6 +83,9 @@ ENGINEER_RATE_WEEKEND = {
     "kieran Mbala": 35,
     "Iosua Caloro": 0,
     "Stefan Caloro": 0,
+    "Oskars Perkons": 0,
+    "Mikael Williams": 0,
+    "Jack Morbin": 0,
 }
 
 ASSISTANT_CUTOFFS = {
@@ -306,6 +312,9 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             "Jake LeBeau",
             "Jamie Scott",
             "Jordan Utter",
+            "Oskars Perkons",
+            "Mikael Williams",
+            "Jack Morbin",
         }
 
         eng_clean = df["Engineer"].astype(str).str.strip()
@@ -816,6 +825,8 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Jamie Scott",
         "Jordan Utter",
         "Diogo Barroso",
+        "Oskars Perkons",
+        "Mikael Williams",
     }
 
     SUBCONTRACTORS_FOR_ROLE = {
@@ -938,6 +949,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Sharick Bartley",
         "Younas",
         "Diogo Barroso",
+        "Jack Morbin",
     }
 
     eng_clean = df["Engineer"].astype(str).str.strip()
