@@ -94,7 +94,7 @@ ASSISTANT_CUTOFFS = {
     "kieran Mbala": date(2025, 6, 3),
 }
 
-Rate_Changes = {
+RATE_CHANGES = {
     "Bernard Bezuidenhout": (date(2025,6,24), 16.50,35),
     "kieran Mbala": (date(2025, 6, 3), 14.00, 35.00),
 }
