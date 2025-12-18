@@ -875,6 +875,19 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df.loc[airon_mask & (row_date >= cutoff), "Role"] = "Engineer"
         df.loc[airon_mask & (row_date < cutoff), "Role"] = "Assistant"
 
+
+        cutoff = ASSISTANT_CUTOFFS.get("kieran Mbala")
+    if cutoff:
+        row_date = (
+            pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
+            if "Real Date (Each Row)" in df.columns
+            else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
+        )
+            
+        kieran_mask = eng_clean.eq("kieran Mbala") & row_date.notna()
+        df.loc[kieran_mask & (row_date >= cutoff), "Role"] = "Engineer"
+        df.loc[kieran_mask & (row_date < cutoff), "Role"] = "Assistant"
+
     #-------------Engineer Recall Logic----------------
     if {"Job Number", "Job Type", "Engineer"}.issubset(df.columns):
 
