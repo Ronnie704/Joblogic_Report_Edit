@@ -93,6 +93,10 @@ ASSISTANT_CUTOFFS = {
     "Airon Paul": date(2025,12,10),
 }
 
+Rate_Changes = {
+    "Bernard Bezuidenhout": (date(2025,6,24), 16.50,35),
+}
+
 #
 def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -521,6 +525,15 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         hourly_rate = weekday_rate.copy()
         hourly_rate[is_weekend & weekend_rate.notna()] = weekend_rate[is_weekend & weekend_rate.notna()]
         hourly_rate = hourly_rate.fillna(0)
+
+        shift_date = shift_totals["Shift Start"].dt.date
+        eng_shift = shift_totals["Engineer"].astype(str).str.strip()
+
+        for eng, (eff_date, new_weekday, new_weekend) in RATE_CHANGE.items():
+            m = (eng_shift == eng) & (shift_date >= eff_date)
+
+            hourly_rate.loc[m & (~is_weekend)] = float(new_weekday)
+            hourly_rate.loc[m & (is_weekend)] = float(new_weekend)
 
         cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
         if cutoff is not None:
