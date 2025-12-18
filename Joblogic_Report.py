@@ -24,7 +24,7 @@ ENGINEER_RATE_WEEKDAY = {
     "Chris Eland": 0,
     "David Head": 0,
     "Ellis Russell": 0,
-    "Fabio Conceiocoa": 20,
+    "Fabio Conceiocoa": 17.50,
     "Gary Brunton": 17.00,
     "Gavain Brown ": 17.50,
     "Greg Czubak": 0,
@@ -103,6 +103,7 @@ RATE_CHANGES = {
     "Gavain Brown ": (date(2025,6,24), 20.00, 35.00),
     "Nelson Vieira": (date(2025,6,24), 20.00, 35.00),
     "Gary Brunton": (date(2024,9,24), 19.00, 35.00),
+    "Fabio Conceiocoa": (date(2025,6,24), 20.00, 35.00),
 }
 
 #
