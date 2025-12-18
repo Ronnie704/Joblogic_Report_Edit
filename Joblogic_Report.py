@@ -522,6 +522,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         ).round(2)
 
         # --- assistants: always 0 overhead per job ---
+        eng_shift = shift_totals["Engineer"].astype(str).str.strip()
         shift_date = shift_totals["Shift Start"].dt.date
         assist_shift_mask = eng_shift.isin(ASSISTANTS)
         for name, cutoff in ASSISTANT_CUTOFFS.items():
