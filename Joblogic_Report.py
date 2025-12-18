@@ -38,7 +38,7 @@ ENGINEER_RATE_WEEKDAY = {
     "Nelson Vieira": 20,
     "Paul Preston": 15,
     "Richard Lambert": 14.5,
-    "Sam Eade": 14,
+    "Sam Eade": 0,
     "Sharick Bartley": 15,
     "Tom Greener-Simon": 15,
     "William Mcmillan ": 18,
@@ -75,7 +75,7 @@ ENGINEER_RATE_WEEKEND = {
     "Nelson Vieira": 35,
     "Paul Preston": 35,
     "Richard Lambert": 35,
-    "Sam Eade": 35,
+    "Sam Eade": 0,
     "Sharick Bartley": 35,
     "Tom Greener-Simon": 35,
     "William Mcmillan ": 35,
@@ -92,11 +92,15 @@ ASSISTANT_CUTOFFS = {
     #Assistant BEFORE this date, Engineer On and After
     "Airon Paul": date(2025,12,10),
     "kieran Mbala": date(2025, 6, 3),
+    "Sam Eade": date(2024,1,4),
 }
 
 RATE_CHANGES = {
     "Bernard Bezuidenhout": (date(2025,6,24), 16.50,35),
     "kieran Mbala": (date(2025, 6, 3), 14.00, 35.00),
+    "Sam Eade": (date(2024,1,4), 12.50, 35.00),
+    "Sam Eade": (date(2024,1,4), 12.50, 35.00),
+    "Sam Eade": (date(2024,8,26), 14.00, 35.00),
 }
 
 #
