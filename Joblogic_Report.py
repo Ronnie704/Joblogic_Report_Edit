@@ -663,14 +663,12 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df.loc[special_mask, "Overhead without Wage"] = 600.0
 
         # --- assistants: no overhead on summary line ---
-        cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
         eng_row = df["Engineer"].astype(str).str.strip()
-
         assist_row = eng_row.isin(ASSISTANTS)
 
-        if cutoff is not None:
-            row_date = pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
-            assist_row = assist_row & ~((eng_row == "Airon Paul") & (row_date >= cutoff))
+        row_date = pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
+        for name, cutoff in ASSISTANT_CUTOFFS.items():
+            assist_row = assist_row & ~((eng_row == name) & (row_date >= cutoff))
 
         assist_row_mask = mask_summary & assist_row
         df.loc[assist_row_mask,"Overhead without Wage"] = 0.0
