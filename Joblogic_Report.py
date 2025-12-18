@@ -25,7 +25,7 @@ ENGINEER_RATE_WEEKDAY = {
     "David Head": 0,
     "Ellis Russell": 0,
     "Fabio Conceiocoa": 20,
-    "Gary Brunton": 19,
+    "Gary Brunton": 17.00,
     "Gavain Brown ": 17.50,
     "Greg Czubak": 0,
     "Jair Gomes": 0,
@@ -35,7 +35,7 @@ ENGINEER_RATE_WEEKDAY = {
     "Kevin Aubignac": 0,
     "Matt Bowden ": 14,
     "Mike Weare": 0,
-    "Nelson Vieira": 20,
+    "Nelson Vieira": 17.50,
     "Paul Preston": 15,
     "Richard Lambert": 14.5,
     "Sam Eade": 0,
@@ -99,9 +99,10 @@ RATE_CHANGES = {
     "Bernard Bezuidenhout": (date(2025,6,24), 16.50,35),
     "kieran Mbala": (date(2025, 6, 3), 14.00, 35.00),
     "Sam Eade": (date(2024,1,4), 12.50, 35.00),
-    "Sam Eade": (date(2024,1,4), 12.50, 35.00),
-    "Sam Eade": (date(2024,8,26), 14.00, 35.00),
-    "Gavain Brown ": (date(2024,6,24), 20.00, 35.00),
+    "Sam Eade": (date(2025,8,26), 14.00, 35.00),
+    "Gavain Brown ": (date(2025,6,24), 20.00, 35.00),
+    "Nelson Vieira": (date(2025,6,24), 20.00, 35.00),
+    "Gary Brunton": (date(2024,9,24), 19.00, 35.00),
 }
 
 #
