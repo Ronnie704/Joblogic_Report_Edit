@@ -522,13 +522,13 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         ).round(2)
 
         # --- assistants: always 0 overhead per job ---
-       shift_date = shift_totals["Shift Start"].dt.date
-       assist_shift_mask = eng_shift.isin(ASSISTANTS)
-       for name, cutoff in ASSISTANT_CUTOFFS.items():
-           m = eng_shift.eq(name) & shift_date.notna()
-           assist_shift_mask = assist_shift_mask & ~(m & (shift_date >= cutoff))
+        shift_date = shift_totals["Shift Start"].dt.date
+        assist_shift_mask = eng_shift.isin(ASSISTANTS)
+        for name, cutoff in ASSISTANT_CUTOFFS.items():
+            m = eng_shift.eq(name) & shift_date.notna()
+            assist_shift_mask = assist_shift_mask & ~(m & (shift_date >= cutoff))
 
-       shift_totals.loc[assist_shift_mask,"Overhead"] = 0.0
+        shift_totals.loc[assist_shift_mask,"Overhead"] = 0.0
 
         #------------ Zero Overhead Engineers -------------------
         ZERO_OVERHEAD_ENGS = {"Chris Eland"}
