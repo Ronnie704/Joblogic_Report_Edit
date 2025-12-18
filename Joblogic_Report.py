@@ -39,7 +39,7 @@ ENGINEER_RATE_WEEKDAY = {
     "Paul Preston": 15,
     "Richard Lambert": 14.5,
     "Sam Eade": 0,
-    "Sharick Bartley": 15,
+    "Sharick Bartley": 0,
     "Tom Greener-Simon": 15,
     "William Mcmillan ": 18,
     "Younas": 15,
@@ -99,6 +99,7 @@ ASSISTANT_CUTOFFS = {
     "Airon Paul": date(2025,12,10),
     "kieran Mbala": date(2025, 6, 3),
     "Sam Eade": date(2024,1,4),
+    ""Sharick Bartley" date(2025,4,8),
 }
 
 RATE_CHANGES = {
@@ -111,6 +112,7 @@ RATE_CHANGES = {
     "Gary Brunton": (date(2024,9,24), 19.00, 35.00),
     "Fabio Conceiocoa": (date(2025,6,24), 20.00, 35.00),
     "Bradley Greener-Simon": (date(2025,5,27), 16.50, 35.00),
+    "Sharick Bartley": (date(2025,4,8), 15.00, 35.00),
 }
 
 #
@@ -336,6 +338,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             "Mikael Williams",
             "Jack Morbin",
             "kieran Mbala",
+            "Sharick Bartley",
         }
 
         eng_clean = df["Engineer"].astype(str).str.strip()
@@ -856,6 +859,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Oskars Perkons",
         "Mikael Williams",
         "kieran Mbala",
+        "Sharick Bartley",
     }
 
     SUBCONTRACTORS_FOR_ROLE = {
@@ -913,6 +917,18 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         Sam_mask = eng_clean.eq("Sam Eade") & row_date.notna()
         df.loc[Sam_mask & (row_date >= cutoff), "Role"] = "Engineer"
         df.loc[Sam_mask & (row_date < cutoff), "Role"] = "Assistant"
+
+    cutoff = ASSISTANT_CUTOFFS.get("Sharick Bartley")
+    if cutoff:
+        row_date = (
+            pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
+            if "Real Date (Each Row)" in df.columns
+            else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
+        )
+            
+        Sharick_mask = eng_clean.eq("Sharick Bartley") & row_date.notna()
+        df.loc[Sharick_mask & (row_date >= cutoff), "Role"] = "Engineer"
+        df.loc[Sharick_mask & (row_date < cutoff), "Role"] = "Assistant"
 
     #-------------Engineer Recall Logic----------------
     if {"Job Number", "Job Type", "Engineer"}.issubset(df.columns):
