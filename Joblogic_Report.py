@@ -42,7 +42,7 @@ ENGINEER_RATE_WEEKDAY = {
     "Sharick Bartley": 0,
     "Tom Greener-Simon": 15,
     "William Mcmillan ": 18,
-    "Younas": 15,
+    "Younas": 0,
     "kieran Mbala": 0,
     "Iosua Caloro": 0,
     "Stefan Caloro": 0,
@@ -82,7 +82,7 @@ ENGINEER_RATE_WEEKEND = {
     "Sharick Bartley": 0,
     "Tom Greener-Simon": 35,
     "William Mcmillan ": 35,
-    "Younas": 35,
+    "Younas": 0,
     "kieran Mbala": 0,
     "Iosua Caloro": 0,
     "Stefan Caloro": 0,
@@ -99,7 +99,8 @@ ASSISTANT_CUTOFFS = {
     "Airon Paul": date(2025,12,10),
     "kieran Mbala": date(2025, 6, 3),
     "Sam Eade": date(2024,1,4),
-    ""Sharick Bartley" date(2025,4,8),
+    "Sharick Bartley": date(2025,4,8),
+    "Younas": date(2025,4,22),
 }
 
 RATE_CHANGES = {
@@ -113,6 +114,7 @@ RATE_CHANGES = {
     "Fabio Conceiocoa": (date(2025,6,24), 20.00, 35.00),
     "Bradley Greener-Simon": (date(2025,5,27), 16.50, 35.00),
     "Sharick Bartley": (date(2025,4,8), 15.00, 35.00),
+    "Younas": (date(2025,4,22), 15.00, 35.00),
 }
 
 #
@@ -339,6 +341,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             "Jack Morbin",
             "kieran Mbala",
             "Sharick Bartley",
+            "Younas",
         }
 
         eng_clean = df["Engineer"].astype(str).str.strip()
@@ -860,6 +863,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Mikael Williams",
         "kieran Mbala",
         "Sharick Bartley",
+        "Younas",
     }
 
     SUBCONTRACTORS_FOR_ROLE = {
@@ -929,6 +933,18 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         Sharick_mask = eng_clean.eq("Sharick Bartley") & row_date.notna()
         df.loc[Sharick_mask & (row_date >= cutoff), "Role"] = "Engineer"
         df.loc[Sharick_mask & (row_date < cutoff), "Role"] = "Assistant"
+
+    cutoff = ASSISTANT_CUTOFFS.get("Younas")
+    if cutoff:
+        row_date = (
+            pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
+            if "Real Date (Each Row)" in df.columns
+            else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
+        )
+            
+        Younas_mask = eng_clean.eq("Younas") & row_date.notna()
+        df.loc[Younas_mask & (row_date >= cutoff), "Role"] = "Engineer"
+        df.loc[Younas_mask & (row_date < cutoff), "Role"] = "Assistant"
 
     #-------------Engineer Recall Logic----------------
     if {"Job Number", "Job Type", "Engineer"}.issubset(df.columns):
