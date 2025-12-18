@@ -43,7 +43,7 @@ ENGINEER_RATE_WEEKDAY = {
     "Tom Greener-Simon": 15,
     "William Mcmillan ": 18,
     "Younas": 15,
-    "kieran Mbala": 14,
+    "kieran Mbala": 0,
     "Iosua Caloro": 0,
     "Stefan Caloro": 0,
     "Oskars Perkons": 0,
@@ -80,7 +80,7 @@ ENGINEER_RATE_WEEKEND = {
     "Tom Greener-Simon": 35,
     "William Mcmillan ": 35,
     "Younas": 35,
-    "kieran Mbala": 35,
+    "kieran Mbala": 0,
     "Iosua Caloro": 0,
     "Stefan Caloro": 0,
     "Oskars Perkons": 0,
@@ -91,10 +91,12 @@ ENGINEER_RATE_WEEKEND = {
 ASSISTANT_CUTOFFS = {
     #Assistant BEFORE this date, Engineer On and After
     "Airon Paul": date(2025,12,10),
+    "kieran Mbala": date(2025, 6, 3),
 }
 
 Rate_Changes = {
     "Bernard Bezuidenhout": (date(2025,6,24), 16.50,35),
+    "kieran Mbala": (date(2025, 6, 3), 14.00, 35.00),
 }
 
 #
@@ -319,6 +321,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             "Oskars Perkons",
             "Mikael Williams",
             "Jack Morbin",
+            "kieran Mbala",
         }
 
         eng_clean = df["Engineer"].astype(str).str.strip()
@@ -840,6 +843,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Diogo Barroso",
         "Oskars Perkons",
         "Mikael Williams",
+        "kieran Mbala",
     }
 
     SUBCONTRACTORS_FOR_ROLE = {
