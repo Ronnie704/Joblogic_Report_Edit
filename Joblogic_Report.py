@@ -19,7 +19,7 @@ ENGINEER_RATE_WEEKDAY = {
     "Airon Paul": 0,
     "Arron Barnes": 0,
     "Bernard Bezuidenhout": 15,
-    "Bradley Greener-Simon": 16.50,
+    "Bradley Greener-Simon": 15.00,
     "Charlie Rowley": 16.00,
     "Chris Eland": 0,
     "David Head": 0,
@@ -49,6 +49,9 @@ ENGINEER_RATE_WEEKDAY = {
     "Oskars Perkons": 0,
     "Mikael Williams": 0,
     "Jack Morbin": 0,
+    "Alfie Pateman": 0,
+    "Jaydan Brown": 0,
+    "Bartosz Skalbania": 0,
 }
 
 ENGINEER_RATE_WEEKEND = {
@@ -76,7 +79,7 @@ ENGINEER_RATE_WEEKEND = {
     "Paul Preston": 35,
     "Richard Lambert": 35,
     "Sam Eade": 0,
-    "Sharick Bartley": 35,
+    "Sharick Bartley": 0,
     "Tom Greener-Simon": 35,
     "William Mcmillan ": 35,
     "Younas": 35,
@@ -86,6 +89,9 @@ ENGINEER_RATE_WEEKEND = {
     "Oskars Perkons": 0,
     "Mikael Williams": 0,
     "Jack Morbin": 0,
+    "Alfie Pateman": 35,
+    "Jaydan Brown": 35,
+    "Bartosz Skalbania": 0,
 }
 
 ASSISTANT_CUTOFFS = {
@@ -104,6 +110,7 @@ RATE_CHANGES = {
     "Nelson Vieira": (date(2025,6,24), 20.00, 35.00),
     "Gary Brunton": (date(2024,9,24), 19.00, 35.00),
     "Fabio Conceiocoa": (date(2025,6,24), 20.00, 35.00),
+    "Bradley Greener-Simon": (date(2025,5,27), 16.50, 35.00),
 }
 
 #
