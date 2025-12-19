@@ -562,16 +562,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             hourly_rate.loc[m & (~is_weekend)] = float(new_weekday)
             hourly_rate.loc[m & (is_weekend)] = float(new_weekend)
 
-        cutoff = ASSISTANT_CUTOFFS.get("Airon Paul")
-        if cutoff is not None:
-            shift_date = shift_totals["Shift Start"].dt.date
-            eng_shift = shift_totals["Engineer"].astype(str).str.strip()
-
-            airon_paid = (eng_shift == "Airon Paul") & (shift_date >= cutoff)
-
-            hourly_rate.loc[airon_paid & (~is_weekend)] = 15.0
-            hourly_rate.loc[airon_paid & (is_weekend)] = 35.0
-
         total_duration = (
             (shift_totals["Shift End"] - shift_totals["Shift Start"])
             .dt.total_seconds() / 3600
