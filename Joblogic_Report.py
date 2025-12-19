@@ -54,7 +54,6 @@ ENGINEER_RATE_WEEKDAY = {
     "Bartosz Skalbania": 20,
     "Aidan KIngsbury Cleghorn": 0,
     "Jaydan Brown": 0,
-
 }
 
 ENGINEER_RATE_WEEKEND = {
@@ -126,7 +125,6 @@ RATE_CHANGES = {
     "Adrian Lewis": (date(2024,8,27), 15.00, 35.00),
 }
 
-#
 def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
     Clean up the Joblogic export:
@@ -180,6 +178,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         row_max = df[date_cols].max(axis=1)
         df = df.loc[row_max.isna() | (row_max.dt.date <= today)].copy()
     #----------------------------------------------
+    
     # Sort by Engineer (A–Z)
     if {"Engineer", "Job Travel"}.issubset(df.columns):
         df = df.sort_values(
@@ -243,8 +242,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df["Labour"] = df["Total Sell"].fillna(0) - df["Material Sell"].fillna(0)
     else:
         df["Labour"] = pd.NA
-
-   
 
     #8 calculate day cost
     if {"Engineer", "Job Travel", "Home Time", "Material Cost", "Material Sell"}.issubset(df.columns):
@@ -514,7 +511,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         shift_totals["Real Date"] = shift_totals["Shift Start"].dt.date
         shift_totals["Pay Month"] = shift_totals["Real Date"].apply(compute_pay_month)
             
-        
         OVERHEAD_VALUE = 471.03
         
         shift_totals["Overhead"] = np.where(
@@ -546,7 +542,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         ZERO_OVERHEAD_ENGS = {"Chris Eland"}
         zero_overhead_shift_mask = shift_totals["Engineer"].astype(str).str.strip().isin(ZERO_OVERHEAD_ENGS)
         shift_totals.loc[zero_overhead_shift_mask, "Overhead"] = 0.0
-            
+        
         # ---------------- WAGE CALCULATION ---------------------
 
         is_weekend = shift_totals["Shift Start"].dt.weekday >= 5
@@ -676,7 +672,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             (shift_totals.loc[non_sc_mask, "Day Basic Wage"] * 0.03
              + shift_totals.loc[non_sc_mask, "Total Pay"]) * 1.1435
         ).round(2)
-
         #---------------------------------------------------------------------------------------
 
         df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI", "Overhead", "Shift Hours", "First Job to Last Job Hours", "Shift First Job Travel", "Shift First Time on Site", "Shift Last Time off Site", "Shift Home Time", "Pay Month",]], on="Shift ID")
@@ -818,8 +813,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             df["Labour Profit (Per Job)"] = pd.NA
             df["Parts Profit (Per Job)"] = pd.NA
             df["Profit (Per Job)"] = pd.NA
-        
-
         #------------------------------------------------------------------------------
 
         for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Overhead without Wage", "Total Cost", "Total Pay", "Wage/Pension/NI", "Shift Hours", "First Job to Last Job Hours", "Shift First Job Travel", "Shift First Time on Site", "Shift Last Time off Site", "Shift Home Time",]:
@@ -841,7 +834,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df["Total Cost"] = pd.NA
         df["Shift Hours"] = pd.NA
         
-
     #9 makes sure these columns exsit
     for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI", "Overhead without Wage", "Total Cost",]:
         if col not in df.columns:
@@ -907,7 +899,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df.loc[airon_mask & (row_date >= cutoff), "Role"] = "Engineer"
         df.loc[airon_mask & (row_date < cutoff), "Role"] = "Assistant"
 
-
     cutoff = ASSISTANT_CUTOFFS.get("kieran Mbala")
     if cutoff:
         row_date = (
@@ -968,7 +959,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df.loc[Tom_mask & (row_date >= cutoff), "Role"] = "Engineer"
         df.loc[Tom_mask & (row_date < cutoff), "Role"] = "Assistant"
 
-    
     cutoff = ASSISTANT_CUTOFFS.get("Adrian Lewis")
     if cutoff:
         row_date = (
@@ -1001,7 +991,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         for name, cutoff in ASSISTANT_CUTOFFS.items():
             m = eng_clean.eq(name) & row_date.notna()
             is_assistant = is_assistant & ~(m & (row_date >= cutoff))
-        
         
         # Base id = bit before "/", e.g. "ABC/000" -> "ABC"
         base_id = job_num_str.str.split("/", n=1).str[0]
@@ -1130,7 +1119,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-
 def connect_ftp() -> FTP_TLS:
     if not FTP_USER or not FTP_PASS:
         raise RuntimeError("FTP_USER and FTP_PASS must be set")
@@ -1139,7 +1127,6 @@ def connect_ftp() -> FTP_TLS:
     ftps.login(FTP_USER, FTP_PASS)
     ftps.prot_p()
     return ftps
-
 
 def ensure_dir(ftps: FTP_TLS, path: str) -> None:
     """Ensure directory path exists"""
@@ -1155,7 +1142,6 @@ def ensure_dir(ftps: FTP_TLS, path: str) -> None:
 
     ftps.cwd(original)
 
-
 def list_csv_files(ftps: FTP_TLS, path: str) -> list[str]:
     """Return list of .csv files"""
     ftps.cwd(path)
@@ -1168,7 +1154,6 @@ def list_csv_files(ftps: FTP_TLS, path: str) -> list[str]:
 
     return [n for n in names if n.lower().endswith(".csv")]
 
-
 def file_exists(ftps: FTP_TLS, directory: str, filename: str) -> bool:
     """Check if file exists in directory"""
     ftps.cwd(directory)
@@ -1180,7 +1165,6 @@ def file_exists(ftps: FTP_TLS, directory: str, filename: str) -> bool:
         raise
     return filename in names
 
-
 def download_csv_to_dataframe(ftps: FTP_TLS, directory: str, filename: str) -> pd.DataFrame:
     """Download csv from ftp into pandas DataFrame"""
     ftps.cwd(directory)
@@ -1189,14 +1173,12 @@ def download_csv_to_dataframe(ftps: FTP_TLS, directory: str, filename: str) -> p
     buf.seek(0)
     return pd.read_csv(buf)
 
-
 def upload_dataframe_as_csv(ftps: FTP_TLS, directory: str, filename: str, df: pd.DataFrame) -> None:
     """Upload pandas DataFrame as csv to ftp"""
     ftps.cwd(directory)
     csv_bytes = df.to_csv(index=False).encode("utf-8")
     buf = io.BytesIO(csv_bytes)
     ftps.storbinary(f"STOR {filename}", buf)
-
 
 def delete_file(ftps: FTP_TLS, directory: str, filename: str) -> None:
     try:
@@ -1205,7 +1187,6 @@ def delete_file(ftps: FTP_TLS, directory: str, filename: str) -> None:
         print(f"Deleted original file: {filename}")
     except Exception as e:
         print(f"Warning: Could not delete {filename}: {e}")
-
 
 def process_new_files():
     print("Connecting to FTP...")
@@ -1254,7 +1235,5 @@ def process_new_files():
         except Exception as e:
             print(f"Warning: error while closing FTP connection: {e}")
 
-
 if __name__ == "__main__":
     process_new_files()
-  
