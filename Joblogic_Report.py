@@ -52,6 +52,9 @@ ENGINEER_RATE_WEEKDAY = {
     "Alfie Pateman": 0,
     "Jaydan Brown": 0,
     "Bartosz Skalbania": 20,
+    "Aidan KIngsbury Cleghorn": 0,
+    "Jaydan Brown": 0,
+
 }
 
 ENGINEER_RATE_WEEKEND = {
@@ -92,6 +95,8 @@ ENGINEER_RATE_WEEKEND = {
     "Alfie Pateman": 0,
     "Jaydan Brown": 35,
     "Bartosz Skalbania": 35,
+    "Aidan KIngsbury Cleghorn": 0,
+    "Jaydan Brown": 0,
 }
 
 ASSISTANT_CUTOFFS = {
