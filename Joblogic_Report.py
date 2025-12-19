@@ -15,7 +15,7 @@ INPUT_DIR = "/JoblogicFTP"
 OUTPUT_DIR = "/JoblogicFTP/processed"
 
 ENGINEER_RATE_WEEKDAY = {
-    "Adrian Lewis": 15,
+    "Adrian Lewis": 0,
     "Airon Paul": 0,
     "Arron Barnes": 0,
     "Bernard Bezuidenhout": 15,
@@ -40,7 +40,7 @@ ENGINEER_RATE_WEEKDAY = {
     "Richard Lambert": 14.5,
     "Sam Eade": 0,
     "Sharick Bartley": 0,
-    "Tom Greener-Simon": 15,
+    "Tom Greener-Simon": 0,
     "William Mcmillan ": 18,
     "Younas": 0,
     "kieran Mbala": 0,
@@ -51,11 +51,11 @@ ENGINEER_RATE_WEEKDAY = {
     "Jack Morbin": 0,
     "Alfie Pateman": 0,
     "Jaydan Brown": 0,
-    "Bartosz Skalbania": 0,
+    "Bartosz Skalbania": 20,
 }
 
 ENGINEER_RATE_WEEKEND = {
-    "Adrian Lewis": 35,
+    "Adrian Lewis": 0,
     "Airon Paul": 0,
     "Arron Barnes": 0,
     "Bernard Bezuidenhout": 35,
@@ -80,7 +80,7 @@ ENGINEER_RATE_WEEKEND = {
     "Richard Lambert": 35,
     "Sam Eade": 0,
     "Sharick Bartley": 0,
-    "Tom Greener-Simon": 35,
+    "Tom Greener-Simon": 0,
     "William Mcmillan ": 35,
     "Younas": 0,
     "kieran Mbala": 0,
@@ -89,9 +89,9 @@ ENGINEER_RATE_WEEKEND = {
     "Oskars Perkons": 0,
     "Mikael Williams": 0,
     "Jack Morbin": 0,
-    "Alfie Pateman": 35,
+    "Alfie Pateman": 0,
     "Jaydan Brown": 35,
-    "Bartosz Skalbania": 0,
+    "Bartosz Skalbania": 35,
 }
 
 ASSISTANT_CUTOFFS = {
@@ -101,6 +101,8 @@ ASSISTANT_CUTOFFS = {
     "Sam Eade": date(2024,1,4),
     "Sharick Bartley": date(2025,4,8),
     "Younas": date(2025,4,22),
+    "Tom Greener-Simon": date(2025,8,26),
+    "Adrian Lewis": date(2024,8,27),
 }
 
 RATE_CHANGES = {
@@ -115,6 +117,8 @@ RATE_CHANGES = {
     "Bradley Greener-Simon": (date(2025,5,27), 16.50, 35.00),
     "Sharick Bartley": (date(2025,4,8), 15.00, 35.00),
     "Younas": (date(2025,4,22), 15.00, 35.00),
+    "Tom Greener-Simon": (date(2025,8,26), 15.00, 35.00),
+    "Adrian Lewis": (date(2024,8,27), 15.00, 35.00),
 }
 
 #
@@ -342,6 +346,8 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             "kieran Mbala",
             "Sharick Bartley",
             "Younas",
+            "Tom Greener-Simon",
+            "Adrian Lewis",
         }
 
         eng_clean = df["Engineer"].astype(str).str.strip()
@@ -861,6 +867,8 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "kieran Mbala",
         "Sharick Bartley",
         "Younas",
+        "Tom Greener-Simon",
+        "Adrian Lewis",
     }
 
     SUBCONTRACTORS_FOR_ROLE = {
@@ -942,6 +950,31 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         Younas_mask = eng_clean.eq("Younas") & row_date.notna()
         df.loc[Younas_mask & (row_date >= cutoff), "Role"] = "Engineer"
         df.loc[Younas_mask & (row_date < cutoff), "Role"] = "Assistant"
+
+    cutoff = ASSISTANT_CUTOFFS.get("Tom Greener-Simon")
+    if cutoff:
+        row_date = (
+            pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
+            if "Real Date (Each Row)" in df.columns
+            else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
+        )
+            
+        Tom_mask = eng_clean.eq("Tom Greener-Simon") & row_date.notna()
+        df.loc[Tom_mask & (row_date >= cutoff), "Role"] = "Engineer"
+        df.loc[Tom_mask & (row_date < cutoff), "Role"] = "Assistant"
+
+    
+    cutoff = ASSISTANT_CUTOFFS.get("Adrian Lewis")
+    if cutoff:
+        row_date = (
+            pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
+            if "Real Date (Each Row)" in df.columns
+            else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
+        )
+            
+        Adrian_mask = eng_clean.eq("Adrian Lewis") & row_date.notna()
+        df.loc[Adrian_mask & (row_date >= cutoff), "Role"] = "Engineer"
+        df.loc[Adrian_mask & (row_date < cutoff), "Role"] = "Assistant"
 
     #-------------Engineer Recall Logic----------------
     if {"Job Number", "Job Type", "Engineer"}.issubset(df.columns):
