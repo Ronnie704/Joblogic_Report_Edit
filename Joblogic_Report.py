@@ -125,9 +125,9 @@ RATE_CHANGES = {
     "Adrian Lewis": (date(2024,8,27), 15.00, 35.00),
 }
 
-def tranform_parts_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+def transform_parts_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    df.columns = [str(c).strip() for c in df.coulmns]
+    df.columns = [str(c).strip() for c in df.columns]
 
     rename_map = {
         "JobId": "JobId",
@@ -168,7 +168,7 @@ def tranform_parts_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     for col in ["Part Cost", "Part Sell"]:
         if col in df.columns:
             df[col] = pd.to_numeric(
-                df[col].astype(str).str.replace(r"[0-9\.\-]", "", regex=True),
+                df[col].astype(str).str.replace(r"[^0-9\.\-]", "", regex=True),
                 errors="coerce",
             ).fillna(0).round(2)
 
@@ -1260,7 +1260,9 @@ def process_new_files():
 
             lower_name = name.lower()
 
-            if "Parts Used_Required" in lower_name:
+            if lower_name == "parts used_required.csv":
+
+            if lower_name == "parts used_required.csv":
                 df_clean = transform_parts_dataframe(df_raw)
             else:
                 df_clean = transform_dataframe(df_raw)
