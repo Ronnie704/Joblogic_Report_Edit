@@ -175,6 +175,9 @@ def transform_parts_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     if "JobId" in df.columns:
         df = df[df["JobId"].notna() & (df["JobId"].str.len() > 0)].copy()
 
+    if "Visit Start" in df.columns:
+        df = df.sort_values(by="Visit Start", ascendings=True).reset_index(drop=True)
+
     return df
 
 
