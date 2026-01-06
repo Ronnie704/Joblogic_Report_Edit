@@ -125,6 +125,59 @@ RATE_CHANGES = {
     "Adrian Lewis": (date(2024,8,27), 15.00, 35.00),
 }
 
+def tranform_parts_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df.columns = [str(c).strip() for c in df.coulmns]
+
+    rename_map = {
+        "JobId": "JobId",
+        "VisitStartDate": "Visit Start",
+        "VisitEndDate": "Visit End",
+        "Site": "Site",
+        "PartNumber": "Part Number",
+        "PartDescription": "Part Description",
+        "Engineer": "Engineer",
+        "Cost": "Part Cost",
+        "Sell": "Part Sell",
+    }
+
+    df = df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns})
+
+    keep = [
+        "JobId",
+        "Visit Start",
+        "Visit End",
+        "Site",
+        "Part Number",
+        "Part Description",
+        "Engineer",
+        "Part Cost",
+        "Part Sell",
+    ]
+
+    df = df[[c for c in keep if c in df.columns]].copy()
+
+    for col in ["JobId", "Site", "Part Number", "Part Description", "Engineer"]:
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.strip()
+
+    for col in ["Visit Start", "Visit End"]:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors="coerce", dayfirst=True)
+
+    for col in ["Part Cost", "Part Sell"]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(
+                df[col].astype(str).str.replace(r"[0-9\.\-]", "", regex=True),
+                errors="coerce",
+            ).fillna(0).round(2)
+
+    if "JobId" in df.columns:
+        df = df[df["JobId"].notna() & (df["JobId"].str.len() > 0)].copy()
+
+    return df
+
+
 def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
     Clean up the Joblogic export:
@@ -1204,7 +1257,13 @@ def process_new_files():
             print(f"Processing {name} -> {processed_name}")
 
             df_raw = download_csv_to_dataframe(ftps, INPUT_DIR, name)
-            df_clean = transform_dataframe(df_raw)
+
+            lower_name = name.lower()
+
+            if "Parts Used_Required" in lower_name:
+                df_clean = transform_parts_dataframe(df_raw)
+            else:
+                df_clean = transform_dataframe(df_raw)
             
             upload_dataframe_as_csv(ftps, OUTPUT_DIR, processed_name, df_clean)
             print(f"Uploaded cleaned file to {OUTPUT_DIR}/{processed_name}")
