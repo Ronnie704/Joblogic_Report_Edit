@@ -130,7 +130,7 @@ def transform_parts_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df.columns = [str(c).strip() for c in df.columns]
 
     rename_map = {
-        "JobId": "JobId",
+        "JobID": "JobID",
         "VisitStartDate": "Visit Start",
         "VisitEndDate": "Visit End",
         "Site": "Site",
@@ -144,7 +144,7 @@ def transform_parts_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df = df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns})
 
     keep = [
-        "JobId",
+        "JobID",
         "Visit Start",
         "Visit End",
         "Site",
