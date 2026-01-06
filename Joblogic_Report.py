@@ -1248,11 +1248,8 @@ def process_new_files():
 
         for name in input_files:
             base, ext = os.path.splitext(name)
-            processed_name = f"{base}_clean.csv"
-
-            if file_exists(ftps, OUTPUT_DIR, processed_name):
-                print(f"Skipping {name} (already processed as {processed_name})")
-                continue
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            processed_name = f"{base}_clean_{ts}.csv"
 
             print(f"Processing {name} -> {processed_name}")
 
@@ -1260,23 +1257,22 @@ def process_new_files():
 
             lower_name = name.lower()
 
-            if lower_name == "parts used_required.csv":
+            if "parts used_required" in lower_name:
                 df_clean = transform_parts_dataframe(df_raw)
             else:
                 df_clean = transform_dataframe(df_raw)
-            
-            upload_dataframe_as_csv(ftps, OUTPUT_DIR, processed_name, df_clean)
+
+            upload_dataframe_as_csv(ftps,OUTPUT_DIR, process_name, df_clean)
             print(f"Uploaded cleaned file to {OUTPUT_DIR}/{processed_name}")
 
-            local_filename = processed_name
-            local_path = os.path.join("/tmp", local_filename)
+            local_path = os.path.join("/tmp", processed_name)
             df_clean.to_csv(local_path, index=False)
             print(f"Saved local file for drive upload: {local_path}")
 
-            upload_to_drive(local_path, drive_filename=local_filename)
-            delete_file(ftps, INPUT_DIR, name)
+            upload_to_drive(local_path, drive_filename=processed_name)
 
-        print("Done processing files.")
+            delete_file(ftps, INPUT_DIR, name)
+            print("Done processing files.")
     finally:
         try:
             ftps.quit()
