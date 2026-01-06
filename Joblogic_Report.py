@@ -1260,7 +1260,7 @@ def process_new_files():
 
             lower_name = name.lower()
 
-            if lower_name == "parts used_required.csv":
+            lower_name == "parts used_required.csv":
 
             if lower_name == "parts used_required.csv":
                 df_clean = transform_parts_dataframe(df_raw)
