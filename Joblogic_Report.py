@@ -1260,7 +1260,7 @@ def process_new_files():
 
             lower_name = name.lower()
 
-            if "parts used_required" in lower_name:
+            if "required" in lower_name:
                 df_clean = transform_parts_dataframe(df_raw)
             else:
                 df_clean = transform_dataframe(df_raw)
