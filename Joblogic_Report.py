@@ -129,6 +129,13 @@ def transform_parts_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df.columns = [str(c).strip() for c in df.columns]
 
+    if "Quantity" in df.columns:
+        df["Quantity"] = pd.to_numeric(df["Quantity"], errors="coerce").fillna(1).astype(int)
+        df.loc[df["Quantity"] < 1, "Quantity"] = 1
+
+    if "Quantity" in df.columns:
+        df = df.loc[df.index.repeat(df["Quantity"])].reset_index(drop=True)
+
     rename_map = {
         "JobID": "JobID",
         "VisitStartDate": "Visit Start",
