@@ -7,7 +7,7 @@ import numpy as np
 from upload_to_drive import upload_to_drive
 from datetime import date, timedelta, datetime
 
-FTP_HOST = "Ronnie789.synology.me"
+FTP_HOST = "ronnie123.synology.me"
 FTP_USER = os.environ.get("FTP_USER")
 FTP_PASS = os.environ.get("FTP_PASS")
 
