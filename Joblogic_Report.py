@@ -627,21 +627,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             hourly_rate.loc[m & (~is_weekend)] = float(new_weekday)
             hourly_rate.loc[m & (is_weekend)] = float(new_weekend)
 
-        # ---------------- CALL-OUT PAY WINDOW ----------------
-        CALL_OUT_START = date(2025, 12, 15)
-        CALL_OUT_END   = date(2026, 1, 1)
-
-        shift_date = shift_totals["Shift Start"].dt.date
-        callout_mask = (shift_date >= CALL_OUT_START) & (shift_date <= CALL_OUT_END)
-
-        # Force weekend / call-out rate during this window
-        hourly_rate.loc[callout_mask] = (
-            shift_totals.loc[callout_mask, "Engineer"]
-            .map(ENGINEER_RATE_WEEKEND)
-            .fillna(hourly_rate.loc[callout_mask])
-        )
-        # ----------------------------------------------------
-
         total_duration = (
             (shift_totals["Shift End"] - shift_totals["Shift Start"])
             .dt.total_seconds() / 3600
