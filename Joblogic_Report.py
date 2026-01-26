@@ -123,6 +123,7 @@ RATE_CHANGES = {
     "Younas": (date(2025,4,22), 15.00, 35.00),
     "Tom Greener-Simon": (date(2025,8,26), 15.00, 35.00),
     "Adrian Lewis": (date(2024,8,27), 15.00, 35.00),
+    "Airon Paul": (date(2025,12,10), 15.00, 35.00),
 }
 
 def transform_parts_dataframe(df: pd.DataFrame) -> pd.DataFrame:
