@@ -617,6 +617,22 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         hourly_rate[is_weekend & weekend_rate.notna()] = weekend_rate[is_weekend & weekend_rate.notna()]
         hourly_rate = hourly_rate.fillna(0)
 
+        # ---------------- CALL-OUT PAY WINDOW ----------------
+        CALL_OUT_START = date(2025, 12, 15)
+        CALL_OUT_END   = date(2026, 1, 1)
+
+        shift_date = shift_totals["Shift Start"].dt.date
+        callout_mask = (shift_date >= CALL_OUT_START) & (shift_date <= CALL_OUT_END)
+
+        # Force weekend / call-out rate during this window
+        hourly_rate.loc[callout_mask] = (
+            shift_totals.loc[callout_mask, "Engineer"]
+            .map(ENGINEER_RATE_WEEKEND)
+            .fillna(hourly_rate.loc[callout_mask])
+        )
+        # ----------------------------------------------------
+        
+
         shift_date = shift_totals["Shift Start"].dt.date
         eng_shift = shift_totals["Engineer"].astype(str).str.strip()
 
