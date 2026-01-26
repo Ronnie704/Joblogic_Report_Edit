@@ -616,6 +616,16 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         hourly_rate = weekday_rate.copy()
         hourly_rate[is_weekend & weekend_rate.notna()] = weekend_rate[is_weekend & weekend_rate.notna()]
         hourly_rate = hourly_rate.fillna(0)
+        
+
+        shift_date = shift_totals["Shift Start"].dt.date
+        eng_shift = shift_totals["Engineer"].astype(str).str.strip()
+
+        for eng, (eff_date, new_weekday, new_weekend) in RATE_CHANGES.items():
+            m = (eng_shift == eng) & (shift_date >= eff_date)
+
+            hourly_rate.loc[m & (~is_weekend)] = float(new_weekday)
+            hourly_rate.loc[m & (is_weekend)] = float(new_weekend)
 
         # ---------------- CALL-OUT PAY WINDOW ----------------
         CALL_OUT_START = date(2025, 12, 15)
@@ -631,16 +641,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             .fillna(hourly_rate.loc[callout_mask])
         )
         # ----------------------------------------------------
-        
-
-        shift_date = shift_totals["Shift Start"].dt.date
-        eng_shift = shift_totals["Engineer"].astype(str).str.strip()
-
-        for eng, (eff_date, new_weekday, new_weekend) in RATE_CHANGES.items():
-            m = (eng_shift == eng) & (shift_date >= eff_date)
-
-            hourly_rate.loc[m & (~is_weekend)] = float(new_weekday)
-            hourly_rate.loc[m & (is_weekend)] = float(new_weekend)
 
         total_duration = (
             (shift_totals["Shift End"] - shift_totals["Shift Start"])
