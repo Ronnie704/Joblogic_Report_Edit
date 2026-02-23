@@ -692,7 +692,14 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         extra_drive = pd.Series(0.0, index=shift_totals.index)
 
         # ----------------- WEEKDAYS (Mon–Fri) -----------------
-        basic_hours.loc[weekday_mask & (total_duration > 0)] = 9.0
+        TEN_HOUR_ENGINEERS = {"Paul Preston"}
+
+        weekday_active = weekday_mask & (total_duration > 0)
+        eng_shift_clean = shift_totals["Engineer"].astype(str).str.strip()
+
+        basic_hours.loc[weekday_active] = 9.0
+        ten_hour_mask = weekday_active & eng_shift_clean.isin(TEN_HOUR_ENGINEERS)
+        basic_hours.loc[ten_hour_mask] = 10.0
 
         weekday_overtime = (pre_home_duration - 9).clip(lower=0)
         weekday_overtime.loc[total_duration <= 9] = 0.0
