@@ -112,21 +112,22 @@ ASSISTANT_CUTOFFS = {
 }
 
 RATE_CHANGES = {
-    "Bernard Bezuidenhout": (date(2025,6,24), 16.50,35),
-    "kieran Mbala": (date(2025, 6, 3), 14.00, 35.00),
-    "Sam Eade": (date(2024,1,4), 12.50, 35.00),
-    "Sam Eade": (date(2025,8,26), 14.00, 35.00),
-    "Gavain Brown ": (date(2025,6,24), 20.00, 35.00),
-    "Nelson Vieira": (date(2025,6,24), 20.00, 35.00),
-    "Gary Brunton": (date(2024,9,24), 19.00, 35.00),
-    "Fabio Conceiocoa": (date(2025,6,24), 20.00, 35.00),
-    "Bradley Greener-Simon": (date(2025,5,27), 16.50, 35.00),
-    "Sharick Bartley": (date(2025,4,8), 15.00, 35.00),
-    "Younas": (date(2025,4,22), 15.00, 35.00),
-    "Tom Greener-Simon": (date(2025,8,26), 15.00, 35.00),
-    "Adrian Lewis": (date(2024,8,27), 15.00, 35.00),
-    "Airon Paul": (date(2025,12,10), 15.00, 35.00),
-    
+    "Bernard Bezuidenhout": [(date(2025,6,24), 16.50, 35)],
+    "kieran Mbala":         [(date(2025,6,3),  14.00, 35.00)],
+    "Sam Eade":             [(date(2024,1,4),  12.50, 35.00),
+                             (date(2025,8,26), 14.00, 35.00)],   # both entries now kept
+    "Gavain Brown ":        [(date(2025,6,24), 20.00, 35.00)],
+    "Nelson Vieira":        [(date(2025,6,24), 20.00, 35.00)],
+    "Gary Brunton":         [(date(2024,9,24), 19.00, 35.00)],
+    "Fabio Conceiocoa":     [(date(2025,6,24), 20.00, 35.00)],
+    "Bradley Greener-Simon":[(date(2025,5,27), 16.50, 35.00)],
+    "Sharick Bartley":      [(date(2025,4,8),  15.00, 35.00),
+                             (date(2025,12,30),17.00, 35.00)],   # new rise added
+    "Younas":               [(date(2025,4,22), 15.00, 35.00),
+                             (date(2025,12,30),17.00, 35.00)],   # new rise added
+    "Tom Greener-Simon":    [(date(2025,8,26), 15.00, 35.00)],
+    "Adrian Lewis":         [(date(2024,8,27), 15.00, 35.00)],
+    "Airon Paul":           [(date(2025,12,10),15.00, 35.00)],
 }
 
 def transform_parts_dataframe(df: pd.DataFrame) -> pd.DataFrame:
@@ -625,11 +626,12 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         shift_date = shift_totals["Shift Start"].dt.date
         eng_shift = shift_totals["Engineer"].astype(str).str.strip()
 
-        for eng, (eff_date, new_weekday, new_weekend) in RATE_CHANGES.items():
-            m = (eng_shift == eng) & (shift_date >= eff_date)
-
-            hourly_rate.loc[m & (~is_weekend)] = float(new_weekday)
-            hourly_rate.loc[m & (is_weekend)] = float(new_weekend)
+        # New loop — apply each change in date order so later rises override earlier ones:
+        for eng, changes in RATE_CHANGES.items():
+            for eff_date, new_weekday, new_weekend in sorted(changes, key=lambda x: x[0]):
+                m = (eng_shift == eng) & (shift_date >= eff_date)
+                hourly_rate.loc[m & (~is_weekend)] = float(new_weekday)
+                hourly_rate.loc[m & (is_weekend)] = float(new_weekend)
 
         total_duration = (
             (shift_totals["Shift End"] - shift_totals["Shift Start"])
