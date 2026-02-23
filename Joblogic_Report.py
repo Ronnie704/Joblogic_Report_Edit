@@ -330,7 +330,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             gap_hours = pd.Series(np.nan, index=df.index)
 
         # treat 00:00–05:59 as "early"
-        early = jt.dt.hour < 6
+        early = jt.dt.hour < 7
 
         # long rest = first job OR >= 8 hours since last Time off Site
         long_rest = gap_hours.isna() | (gap_hours >= 8)
