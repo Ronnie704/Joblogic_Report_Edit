@@ -714,8 +714,8 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         extra_drive.loc[weekday_mask] = weekday_extra_drive.loc[weekday_mask]
 
         # ----------------- WEEKENDS (Sat–Sun) -----------------
-        basic_hours.loc[weekend_mask] = shift_totals.loc[weekend_mask, "Day Hours"].fillna(0)
-        overtime_hours.loc[weekend_mask] = 0.0
+        basic_hours.loc[weekend_mask] = 0.0
+        overtime_hours.loc[weekend_mask] = shift_totals.loc[weekend_mask, "Day Hours"].fillna(0)
         extra_drive.loc[weekend_mask] = 0.0
 
         overtime_factor = pd.Series(1.5, index=shift_totals.index)
