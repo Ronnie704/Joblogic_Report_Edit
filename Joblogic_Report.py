@@ -39,10 +39,10 @@ ENGINEER_RATE_WEEKDAY = {
     "Jair Gomes": 0,
     "Jake LeBeau": 0,
     "Jamie Boyd": 25,
+    "Guy Carter": 25,
     "Jamie Scott": 0,
     "Jordan Utter": 0,
     "Kevin Aubignac": 0,
-    "Matt Bowden ": 14,
     "Mike Weare": 0,
     "Nelson Vieira": 17.50,
     "Paul Preston": 15,
@@ -82,10 +82,10 @@ ENGINEER_RATE_WEEKEND = {
     "Jair Gomes": 0,
     "Jake LeBeau": 0,
     "Jamie Boyd": 25,
+    "Guy Carter": 25,
     "Jamie Scott": 0,
     "Jordan Utter": 0,
     "Kevin Aubignac": 0,
-    "Matt Bowden": 35,
     "Mike Weare": 0,
     "Nelson Vieira": 35,
     "Paul Preston": 35,
@@ -153,6 +153,7 @@ ASSISTANTS = {
     "Jair Gomes",
     "Jake LeBeau",
     "Jamie Boyd",
+    "Guy Carter",
     "Jamie Scott",
     "Jordan Utter",
     "Oskars Perkons",
@@ -166,8 +167,8 @@ ASSISTANTS = {
     "Zain Saeed",
 }
 
-# Assistants for Role column display only (subset of ASSISTANTS — excludes Jamie Boyd)
-ASSISTANTS_FOR_ROLE = ASSISTANTS - {"Jamie Boyd"}
+# Assistants for Role column display only (subset of ASSISTANTS — excludes on-site pay engineers)
+ASSISTANTS_FOR_ROLE = ASSISTANTS - {"Jamie Boyd", "Guy Carter"}
 
 # Subcontractors: special pay rules (£90 first hour, £60/hr after in 15-min increments)
 SUB_CONTRACTORS = {
@@ -183,7 +184,7 @@ TEN_HOUR_ENGINEERS = {"Paul Preston"}
 
 # Engineers paid on-site hours only: flat rate, 7-hour minimum retainer, no overtime
 # multiplier, no job revenue share (see ASSISTANTS above)
-ON_SITE_PAY_ENGINEERS  = {"Jamie Boyd"}
+ON_SITE_PAY_ENGINEERS  = {"Jamie Boyd", "Guy Carter"}
 ON_SITE_RETAINER_HOURS = 7
 
 # Weekend minimum retainer (hours) for standard engineers
