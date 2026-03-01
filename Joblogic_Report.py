@@ -31,7 +31,6 @@ ENGINEER_RATE_WEEKDAY = {
     "Bradley Greener-Simon": 15.00,
     "Charlie Rowley": 16.00,
     "Chris Eland": 0,
-    "David Head": 0,
     "Ellis Russell": 0,
     "Fabio Conceiocoa": 17.50,
     "Gary Brunton": 17.00,
@@ -75,7 +74,6 @@ ENGINEER_RATE_WEEKEND = {
     "Bradley Greener-Simon": 35,
     "Charlie Rowley": 35,
     "Chris Eland": 0,
-    "David Head": 0,
     "Ellis Russell": 0,
     "Fabio Conceiocoa": 35,
     "Gary Brunton": 35,
@@ -197,6 +195,17 @@ SPECIAL_OVERHEAD_VALUE = 600.0
 
 # Engineers with zero overhead
 ZERO_OVERHEAD_ENGS = {"Chris Eland"}
+
+# Management doing jobs: zero wage, zero overhead, zero bonus, Role = "Office"
+MANAGEMENT_ENGINEERS = {
+    "Chris Rivoire",
+    "Chris Smith",
+    "David Head",
+    "Edward Dale Cooke",
+    "Ellie Mahoney",
+    "Kathryn Barnes",
+    "Steve Elder",
+}
 
 # Standard overhead value applied per on-site hour
 OVERHEAD_VALUE = 471.03
@@ -575,6 +584,14 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         # Zero overhead engineers
         shift_totals.loc[eng_shift.isin(ZERO_OVERHEAD_ENGS), "Overhead"] = 0.0
 
+        # Management: zero overhead and zero wage
+        mgmt_shift_mask = eng_shift.isin(MANAGEMENT_ENGINEERS)
+        shift_totals.loc[mgmt_shift_mask, "Overhead"]          = 0.0
+        shift_totals.loc[mgmt_shift_mask, "Day Basic Wage"]    = 0.0
+        shift_totals.loc[mgmt_shift_mask, "Day Overtime Wage"] = 0.0
+        shift_totals.loc[mgmt_shift_mask, "Total Pay"]         = 0.0
+        shift_totals.loc[mgmt_shift_mask, "Wage/Pension/NI"]  = 0.0
+
         # --- Hourly rate (with rate change history) ---
         is_weekend  = shift_totals["Shift Start"].dt.weekday >= 5
         hourly_rate = shift_totals["Engineer"].map(ENGINEER_RATE_WEEKDAY).copy()
@@ -708,6 +725,12 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         df.loc[mask_summary & asst_row,                               "Overhead without Wage"] = 0.0
         df.loc[mask_summary & eng_row.isin(ZERO_OVERHEAD_ENGS),       "Overhead without Wage"] = 0.0
+        mgmt_row_mask = mask_summary & eng_row.isin(MANAGEMENT_ENGINEERS)
+        df.loc[mgmt_row_mask, "Overhead without Wage"]  = 0.0
+        df.loc[mgmt_row_mask, "Day Basic Wage"]         = 0.0
+        df.loc[mgmt_row_mask, "Day Overtime Wage"]      = 0.0
+        df.loc[mgmt_row_mask, "Total Pay"]              = 0.0
+        df.loc[mgmt_row_mask, "Wage/Pension/NI"]        = 0.0
         df.loc[special_mask, ["Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI"]] = 0.0
 
         # --- Profit & margin ---
@@ -754,6 +777,9 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         # No bonus for flat rate on-site engineers
         df.loc[mask_summary & eng_row.isin(ON_SITE_PAY_ENGINEERS), "Bonus"] = 0
+
+        # No bonus for management
+        df.loc[mask_summary & eng_row.isin(MANAGEMENT_ENGINEERS), "Bonus"] = 0
 
         # --- Office-visit-only shifts: zero overhead ---
         if {"Shift ID", "Job Type"}.issubset(df.columns):
@@ -844,9 +870,10 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     eng_clean = df["Engineer"].astype(str).str.strip()
     df["Role"] = "Unknown"
-    df.loc[eng_clean.isin(ENGINEERS_CLEAN),     "Role"] = "Engineer"
-    df.loc[eng_clean.isin(ASSISTANTS_CLEAN),    "Role"] = "Assistant"
-    df.loc[eng_clean.isin(SUBCONTRACTORS_CLEAN),"Role"] = "Sub Contractors"
+    df.loc[eng_clean.isin(ENGINEERS_CLEAN),       "Role"] = "Engineer"
+    df.loc[eng_clean.isin(ASSISTANTS_CLEAN),      "Role"] = "Assistant"
+    df.loc[eng_clean.isin(SUBCONTRACTORS_CLEAN),  "Role"] = "Sub Contractors"
+    df.loc[eng_clean.isin(MANAGEMENT_ENGINEERS),  "Role"] = "Office"
 
     # Apply promotion dates: anyone in ASSISTANT_CUTOFFS transitions from Assistant to Engineer
     row_date = _get_row_date(df)
