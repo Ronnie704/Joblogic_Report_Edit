@@ -14,6 +14,9 @@ FTP_PASS = os.environ.get("FTP_PASS")
 INPUT_DIR = "/JoblogicFTP"
 OUTPUT_DIR = "/JoblogicFTP/processed"
 
+# Engineers paid on-site hours only (flat rate, custom retainer, no overtime multiplier, no job revenue share)
+ON_SITE_PAY_ENGINEERS = {"Jamie Boyd"}
+
 ENGINEER_RATE_WEEKDAY = {
     "Adrian Lewis": 0,
     "Airon Paul": 0,
@@ -53,8 +56,8 @@ ENGINEER_RATE_WEEKDAY = {
     "Jaydan Brown": 0,
     "Bartosz Skalbania": 20,
     "Aidan KIngsbury Cleghorn": 0,
-    "Jaydan Brown": 0,
     "Zain Saeed": 0,
+    "Jamie Boyd": 25,
 }
 
 ENGINEER_RATE_WEEKEND = {
@@ -96,8 +99,8 @@ ENGINEER_RATE_WEEKEND = {
     "Jaydan Brown": 35,
     "Bartosz Skalbania": 35,
     "Aidan KIngsbury Cleghorn": 0,
-    "Jaydan Brown": 0,
     "Zain Saeed": 0,
+    "Jamie Boyd": 25,
 }
 
 ASSISTANT_CUTOFFS = {
@@ -115,16 +118,16 @@ RATE_CHANGES = {
     "Bernard Bezuidenhout": [(date(2025,6,24), 16.50, 35)],
     "kieran Mbala":         [(date(2025,6,3),  14.00, 35.00)],
     "Sam Eade":             [(date(2024,1,4),  12.50, 35.00),
-                             (date(2025,8,26), 14.00, 35.00)],   # both entries now kept
+                             (date(2025,8,26), 14.00, 35.00)],
     "Gavain Brown ":        [(date(2025,6,24), 20.00, 35.00)],
     "Nelson Vieira":        [(date(2025,6,24), 20.00, 35.00)],
     "Gary Brunton":         [(date(2024,9,24), 19.00, 35.00)],
     "Fabio Conceiocoa":     [(date(2025,6,24), 20.00, 35.00)],
     "Bradley Greener-Simon":[(date(2025,5,27), 16.50, 35.00)],
     "Sharick Bartley":      [(date(2025,4,8),  15.00, 35.00),
-                             (date(2025,12,30),17.00, 35.00)],   # new rise added
+                             (date(2025,12,30),17.00, 35.00)],
     "Younas":               [(date(2025,4,22), 15.00, 35.00),
-                             (date(2025,12,30),17.00, 35.00)],   # new rise added
+                             (date(2025,12,30),17.00, 35.00)],
     "Tom Greener-Simon":    [(date(2025,8,26), 15.00, 35.00)],
     "Adrian Lewis":         [(date(2024,8,27), 15.00, 35.00)],
     "Airon Paul":           [(date(2025,12,10),15.00, 35.00)],
@@ -211,7 +214,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Expense Cost",
         "Expense Sell",
         "Reference Number",
-        "Quoted Number",   # NOTE: if your column is actually "Quote Number", change this
+        "Quoted Number",
         "Completed Date",
     ]
     df = df.drop(columns=[c for c in columns_to_drop if c in df.columns], errors="ignore")
@@ -246,8 +249,8 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         row_max = df[date_cols].max(axis=1)
         df = df.loc[row_max.isna() | (row_max.dt.date <= today)].copy()
     #----------------------------------------------
-    
-    # Sort by Engineer (A–Z)
+
+    # Sort by Engineer (A-Z)
     if {"Engineer", "Job Travel"}.issubset(df.columns):
         df = df.sort_values(
             by=["Engineer", "Job Travel"],
@@ -256,7 +259,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     elif "Engineer" in df.columns:
         df = df.sort_values(by="Engineer", ascending=True).reset_index(drop=True)
 
-    #2c missing home time when there is long break of 4h
+    #2c missing home time when there is long break of 8h
     if {"Engineer", "Job Travel", "Time off Site", "Home Time"}.issubset(df.columns):
         df = df.sort_values(by=["Engineer", "Job Travel"]).reset_index(drop=True)
 
@@ -291,8 +294,8 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         job_type = df["Job Type"].astype(str).str.strip().str.upper()
         job_num  = df["Job Number"].astype(str).str.strip().str.upper()
 
-        is_quoted = job_type.eq("QUOTED")        # this matches "Quoted   " too
-        is_q0     = job_num.str.startswith("Q0") # only fix these
+        is_quoted = job_type.eq("QUOTED")
+        is_q0     = job_num.str.startswith("Q0")
 
         mask_fix = is_quoted & is_q0
 
@@ -301,7 +304,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             - df.loc[mask_fix, "Material Sell"].fillna(0)
         )
 
-    # 5. Drop Job Ref 1 now (we’ve used it)
+    # 5. Drop Job Ref 1 now (we've used it)
     if "Job Ref 1" in df.columns:
         df = df.drop(columns=["Job Ref 1"], errors="ignore")
 
@@ -321,15 +324,12 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         jt = df["Job Travel"]
 
         if "Time off Site" in df.columns:
-            # previous Time off Site per engineer
             prev_off = df.groupby("Engineer")["Time off Site"].shift(1)
-            # gap in hours since previous Time off Site
             gap_hours = (jt - prev_off).dt.total_seconds() / 3600
         else:
-            # if no Time off Site, we can't measure the gap
             gap_hours = pd.Series(np.nan, index=df.index)
 
-        # treat 00:00–05:59 as "early"
+        # treat 00:00-06:59 as "early"
         early = jt.dt.hour < 7
 
         # long rest = first job OR >= 8 hours since last Time off Site
@@ -359,44 +359,41 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             df["_job_hours"] = (duration.dt.total_seconds() / 3600).fillna(0)
         else:
             df["_job_hours"] = 0.0
-            
+
         #----------------------------------------------------------------
         if {
             "Job Number", "Engineer", "Time on Site", "Time off Site",
             "Material Cost", "Material Sell", "Labour", "Total Sell"
         }.issubset(df.columns):
 
-            # 1️⃣ Hours per visit (row)
+            # 1. Hours per visit (row)
             df["_job_hours_split"] = (
                 (df["Time off Site"] - df["Time on Site"])
                 .dt.total_seconds() / 3600
             ).fillna(0)
 
-            # 2️⃣ Total hours per job (all engineers, all visits)
+            # 2. Total hours per job (all engineers, all visits)
             job_total_hours = df.groupby("Job Number")["_job_hours_split"].transform("sum")
 
-            # 3️⃣ Total hours per engineer per job (sum of all their visits)
+            # 3. Total hours per engineer per job (sum of all their visits)
             eng_job_hours = df.groupby(["Job Number", "Engineer"])["_job_hours_split"].transform("sum")
 
-            # 4️⃣ Engineer share of the job (same as before)
+            # 4. Engineer share of the job
             engineer_share = np.where(
                 job_total_hours > 0,
                 eng_job_hours / job_total_hours,
                 0.0,
             )
 
-            # 5️⃣ Within-engineer share per row (visit/day)
+            # 5. Within-engineer share per row (visit/day)
             row_within_engineer_share = np.where(
                 eng_job_hours > 0,
                 df["_job_hours_split"] / eng_job_hours,
                 0.0,
             )
 
-        # 6️⃣ Final row share = engineer share × within-engineer share
-        #    (so: first between engineers, then between their visits)
+        # 6. Final row share = engineer share x within-engineer share
         row_share = engineer_share * row_within_engineer_share
-
-        # make it a pandas Series so we can groupby on it
         row_share = pd.Series(row_share, index=df.index, dtype=float)
 
         # ---------- ASSISTANT LOGIC ----------
@@ -419,6 +416,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             "Tom Greener-Simon",
             "Adrian Lewis",
             "Zain Saeed",
+            "Jamie Boyd",  # on-site pay engineer: no job revenue share (like assistant), but Role = Engineer
         }
 
         eng_clean = df["Engineer"].astype(str).str.strip()
@@ -436,14 +434,11 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         # per-job: does this job have at least one non-assistant?
         has_main = (~is_assistant).groupby(df["Job Number"]).transform("any")
 
-        # start from original row_share
         row_share_adj = row_share.copy()
 
-        # if job has a main engineer, assistants get 0 share
         mask_assist_zero = is_assistant & has_main
         row_share_adj[mask_assist_zero] = 0.0
 
-        # renormalise shares per job so totals still match
         sum_shares = row_share_adj.groupby(df["Job Number"]).transform("sum")
 
         row_share_final = row_share_adj.copy()
@@ -454,14 +449,14 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         )
         # ---------- END ASSISTANT LOGIC ----------
 
-        # 7️⃣ Apply final row share to value columns
+        # 7. Apply final row share to value columns
         for col in ["Material Cost", "Material Sell", "Labour", "Total Sell"]:
             if col in df.columns:
                 df[col] = (df[col].fillna(0) * row_share_final).round(2)
 
-        # 8️⃣ Clean up helper column
+        # 8. Clean up helper column
         df = df.drop(columns=["_job_hours_split"])
-        
+
         #----------------------------------------------------------------
 
         shift_totals = (
@@ -498,7 +493,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             (shift_totals["Last Time off Site"] - shift_totals["First Time on Site"])
             .dt.total_seconds() / 3600
         ).fillna(0).round(2)
-        
+
         shift_totals["Day Part Profit"] = shift_totals["Day Sell"] - shift_totals["Day Cost"]
 
         def compute_pay_month(day):
@@ -515,7 +510,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                 first_next = date(y, m + 1, 1)
             last_day = first_next - timedelta(days=1)
 
-            # start from last_day - 2 so Mon has Tue+Wed still in the same month
             cur = last_day - timedelta(days=2)
             end = None
             while cur.month == m:
@@ -524,7 +518,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                     break
                 cur -= timedelta(days=1)
             if end is None:
-                # fallback: just last Monday in month
                 cur = last_day
                 while cur.month == m and cur.weekday() != 0:
                     cur -= timedelta(days=1)
@@ -542,16 +535,14 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                 prev_first_next = date(py, pm + 1, 1)
             prev_last = prev_first_next - timedelta(days=1)
 
-            # start = last Tuesday in previous month with a Wednesday still in that month
             cur2 = prev_last - timedelta(days=1)
             start = None
             while cur2.month == pm:
-                if cur2.weekday() == 1 and (cur2 + timedelta(days=1)).month == pm:  # Tuesday & next day still in month
+                if cur2.weekday() == 1 and (cur2 + timedelta(days=1)).month == pm:
                     start = cur2
                     break
                 cur2 -= timedelta(days=1)
             if start is None:
-                # fallback: last Tuesday of previous month
                 cur2 = prev_last
                 while cur2.month == pm and cur2.weekday() != 1:
                     cur2 -= timedelta(days=1)
@@ -559,29 +550,25 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
             # --- decide which pay month this date belongs to ---
             if d < start:
-                # belongs to pay month BEFORE previous month
                 if pm == 1:
                     yy, mm = py - 1, 12
                 else:
                     yy, mm = py, pm - 1
             elif d > end:
-                # belongs to next pay month
                 if m == 12:
                     yy, mm = y + 1, 1
                 else:
                     yy, mm = y, m + 1
             else:
-                # belongs to current calendar month
                 yy, mm = y, m
 
             return f"{yy}-{mm:02d}"
 
-        # make sure Real Date exists for shifts (from Shift Start)
         shift_totals["Real Date"] = shift_totals["Shift Start"].dt.date
         shift_totals["Pay Month"] = shift_totals["Real Date"].apply(compute_pay_month)
-            
+
         OVERHEAD_VALUE = 471.03
-        
+
         shift_totals["Overhead"] = np.where(
             shift_totals["Day Hours"] > 0,
             OVERHEAD_VALUE / shift_totals["Day Hours"],
@@ -597,7 +584,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             0.0,
         ).round(2)
 
-        # --- assistants: always 0 overhead per job ---
+        # --- assistants (including Jamie Boyd): always 0 overhead ---
         eng_shift = shift_totals["Engineer"].astype(str).str.strip()
         shift_date = shift_totals["Shift Start"].dt.date
         assist_shift_mask = eng_shift.isin(ASSISTANTS)
@@ -605,13 +592,13 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             m = eng_shift.eq(name) & shift_date.notna()
             assist_shift_mask = assist_shift_mask & ~(m & (shift_date >= cutoff))
 
-        shift_totals.loc[assist_shift_mask,"Overhead"] = 0.0
+        shift_totals.loc[assist_shift_mask, "Overhead"] = 0.0
 
         #------------ Zero Overhead Engineers -------------------
         ZERO_OVERHEAD_ENGS = {"Chris Eland"}
         zero_overhead_shift_mask = shift_totals["Engineer"].astype(str).str.strip().isin(ZERO_OVERHEAD_ENGS)
         shift_totals.loc[zero_overhead_shift_mask, "Overhead"] = 0.0
-        
+
         # ---------------- WAGE CALCULATION ---------------------
 
         is_weekend = shift_totals["Shift Start"].dt.weekday >= 5
@@ -621,12 +608,11 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         hourly_rate = weekday_rate.copy()
         hourly_rate[is_weekend & weekend_rate.notna()] = weekend_rate[is_weekend & weekend_rate.notna()]
         hourly_rate = hourly_rate.fillna(0)
-        
 
         shift_date = shift_totals["Shift Start"].dt.date
         eng_shift = shift_totals["Engineer"].astype(str).str.strip()
 
-        # New loop — apply each change in date order so later rises override earlier ones:
+        # Apply each rate change in date order so later rises override earlier ones
         for eng, changes in RATE_CHANGES.items():
             for eff_date, new_weekday, new_weekend in sorted(changes, key=lambda x: x[0]):
                 m = (eng_shift == eng) & (shift_date >= eff_date)
@@ -646,7 +632,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             "Ellis Russell",
         }
 
-        # strip spaces from Engineer names before matching
         eng_clean = shift_totals["Engineer"].astype(str).str.strip()
         sc_mask = eng_clean.isin(SUB_CONTRACTORS)
         non_sc_mask = ~sc_mask
@@ -673,32 +658,34 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             shift_totals.loc[sc_mask, "Day Basic Wage"] = sc_total_pay
             shift_totals.loc[sc_mask, "Day Overtime Wage"] = 0.0
             shift_totals.loc[sc_mask, "Total Pay"] = sc_total_pay
-            # No uplift for NI/pension for subcontractors
             shift_totals.loc[sc_mask, "Wage/Pension/NI"] = sc_total_pay
 
-        # ---- Standard employees (existing logic) ----
+        # ---- Standard employees ----
         home_travel_duration = (
             (shift_totals["Shift End"] - shift_totals["Last Time off Site"])
             .dt.total_seconds() / 3600
         ).fillna(0).clip(lower=0)
-            
+
         pre_home_duration = (
             (shift_totals["Last Time off Site"] - shift_totals["Shift Start"])
             .dt.total_seconds() / 3600
         ).fillna(0).clip(lower=0)
 
-        weekday_mask = non_sc_mask & (~is_weekend)
-        weekend_mask = non_sc_mask & is_weekend
+        eng_shift_clean = shift_totals["Engineer"].astype(str).str.strip()
+
+        # Exclude on-site pay engineers from standard weekday/weekend masks
+        on_site_mask = non_sc_mask & eng_shift_clean.isin(ON_SITE_PAY_ENGINEERS)
+        weekday_mask = non_sc_mask & (~is_weekend) & (~on_site_mask)
+        weekend_mask = non_sc_mask & is_weekend & (~on_site_mask)
 
         basic_hours = pd.Series(0.0, index=shift_totals.index)
         overtime_hours = pd.Series(0.0, index=shift_totals.index)
         extra_drive = pd.Series(0.0, index=shift_totals.index)
 
-        # ----------------- WEEKDAYS (Mon–Fri) -----------------
+        # ----------------- WEEKDAYS (Mon-Fri) -----------------
         TEN_HOUR_ENGINEERS = {"Paul Preston"}
 
         weekday_active = weekday_mask & (total_duration > 0)
-        eng_shift_clean = shift_totals["Engineer"].astype(str).str.strip()
 
         basic_hours.loc[weekday_active] = 9.0
         ten_hour_mask = weekday_active & eng_shift_clean.isin(TEN_HOUR_ENGINEERS)
@@ -713,15 +700,26 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         weekday_extra_drive.loc[total_duration <= 9] = 0.0
         extra_drive.loc[weekday_mask] = weekday_extra_drive.loc[weekday_mask]
 
-        # ----------------- WEEKENDS (Sat–Sun) -----------------
+        # ----------------- WEEKENDS (Sat-Sun) -----------------
+        # All pay goes into overtime at flat rate (no 1.5x), 5-hour minimum retainer
         basic_hours.loc[weekend_mask] = 0.0
         overtime_hours.loc[weekend_mask] = shift_totals.loc[weekend_mask, "Day Hours"].fillna(0).clip(lower=5)
         extra_drive.loc[weekend_mask] = 0.0
 
-        overtime_factor = pd.Series(1.5, index=shift_totals.index)
-        overtime_factor.loc[weekend_mask] = 1.0
+        # ----------------- FLAT RATE ON-SITE ENGINEERS (e.g. Jamie Boyd) -----------------
+        # Paid on-site hours only, 7-hour minimum retainer, flat rate all week, no overtime multiplier
+        ON_SITE_RETAINER = 7
+        basic_hours.loc[on_site_mask] = (
+            shift_totals.loc[on_site_mask, "Day Hours"].fillna(0).clip(lower=ON_SITE_RETAINER)
+        )
+        overtime_hours.loc[on_site_mask] = 0.0
+        extra_drive.loc[on_site_mask] = 0.0
 
-        # apply standard wage logic ONLY to non-subcontractors
+        overtime_factor = pd.Series(1.5, index=shift_totals.index)
+        overtime_factor.loc[weekend_mask] = 1.0   # weekends: flat rate
+        overtime_factor.loc[on_site_mask] = 1.0   # on-site engineers: always flat rate
+
+        # Apply standard wage logic to non-subcontractors
         shift_totals.loc[non_sc_mask, "Day Basic Wage"] = (
             basic_hours[non_sc_mask] * hourly_rate[non_sc_mask]
         ).round(2)
@@ -744,7 +742,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         df = df.join(shift_totals[["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI", "Overhead", "Shift Hours", "First Job to Last Job Hours", "Shift First Job Travel", "Shift First Time on Site", "Shift Last Time off Site", "Shift Home Time", "Pay Month",]], on="Shift ID")
 
-        df["Overhead without Wage"] = pd.NA 
+        df["Overhead without Wage"] = pd.NA
         df["Total Cost"] = pd.NA
         summary_idx = df.groupby("Shift ID").tail(1).index
         mask_summary = df.index.isin(summary_idx)
@@ -753,7 +751,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         special_mask = mask_summary & df["Engineer"].astype(str).str.strip().isin(SPECIAL_ENGS)
         df.loc[special_mask, "Overhead without Wage"] = 600.0
 
-        # --- assistants: no overhead on summary line ---
+        # --- assistants (including Jamie Boyd): no overhead on summary line ---
         eng_row = df["Engineer"].astype(str).str.strip()
         assist_row = eng_row.isin(ASSISTANTS)
 
@@ -762,17 +760,17 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             assist_row = assist_row & ~((eng_row == name) & (row_date >= cutoff))
 
         assist_row_mask = mask_summary & assist_row
-        df.loc[assist_row_mask,"Overhead without Wage"] = 0.0
+        df.loc[assist_row_mask, "Overhead without Wage"] = 0.0
 
         zero_overhead_row_mask = mask_summary & df["Engineer"].astype(str).str.strip().isin(ZERO_OVERHEAD_ENGS)
         df.loc[zero_overhead_row_mask, "Overhead without Wage"] = 0.0
 
         for col in ["Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI"]:
             df.loc[special_mask, col] = 0.0
-        
+
         df.loc[mask_summary, "Total Cost"] = (df.loc[mask_summary, "Wage/Pension/NI"].fillna(0) + df.loc[mask_summary, "Overhead without Wage"].fillna(0)).round(2)
         df.loc[mask_summary, "Labour Profit"] = (df.loc[mask_summary, "Day Labour"].fillna(0) - df.loc[mask_summary, "Total Cost"].fillna(0)).round(2)
-        df.loc[mask_summary, "Labour Margin"] = (df.loc[mask_summary, "Labour Profit"] / df.loc[mask_summary, "Day Labour"]).replace([np.inf, -np.inf], np.nan) .fillna(0) * 100
+        df.loc[mask_summary, "Labour Margin"] = (df.loc[mask_summary, "Labour Profit"] / df.loc[mask_summary, "Day Labour"]).replace([np.inf, -np.inf], np.nan).fillna(0) * 100
         df.loc[mask_summary, "Labour Margin"] = df.loc[mask_summary, "Labour Margin"].round(2)
         df.loc[mask_summary, "Total Profit"] = (df.loc[mask_summary, "Labour Profit"].fillna(0) + df.loc[mask_summary, "Day Part Profit"].fillna(0)).round(2)
 
@@ -788,16 +786,20 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         conditions = [
             df.loc[mask_summary, "Combined Margin"] <= 0,
-            (df.loc[mask_summary, "Combined Margin"] > 0) & (df.loc[mask_summary, "Combined Margin"] <25),
+            (df.loc[mask_summary, "Combined Margin"] > 0) & (df.loc[mask_summary, "Combined Margin"] < 25),
             (df.loc[mask_summary, "Combined Margin"] >= 25) & (df.loc[mask_summary, "Combined Margin"] < 35),
             (df.loc[mask_summary, "Combined Margin"] >= 35) & (df.loc[mask_summary, "Combined Margin"] < 50),
-            df.loc[mask_summary, "Combined Margin"] >=50,
+            df.loc[mask_summary, "Combined Margin"] >= 50,
         ]
         choices = [-20, 0, 20, 50, 100]
 
         df.loc[mask_summary, "Bonus"] = np.select(conditions, choices, default=0)
 
-        # If Only Office Visit in a day 
+        # No bonus for flat rate on-site engineers (e.g. Jamie Boyd)
+        on_site_summary_mask = mask_summary & df["Engineer"].astype(str).str.strip().isin(ON_SITE_PAY_ENGINEERS)
+        df.loc[on_site_summary_mask, "Bonus"] = 0
+
+        # If Only Office Visit in a day
         if {"Shift ID", "Job Type"}.issubset(df.columns):
             status_upper = df["Job Type"].astype(str).str.strip().str.upper()
             office_rows = status_upper.eq("OFFICE VISIT")
@@ -830,7 +832,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             )
             combined_margin_off = combined_margin_off.replace(
                 [np.inf, -np.inf], np.nan
-            ).fillna(0) *100
+            ).fillna(0) * 100
 
             df.loc[office_summary, "Total Profit"] = (
                 labour_profit_off + parts_profit_off
@@ -842,14 +844,12 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
         if {"Shift ID", "_job_hours", "Total Cost"}.issubset(df.columns):
 
-            # same Total Cost for every row in a shift
             shift_total_cost = (
                 df.groupby("Shift ID")["Total Cost"]
                   .transform("max")
                   .fillna(0)
             )
 
-            # total hours per shift (sum of on-site hours)
             shift_hours = (
                 df.groupby("Shift ID")["_job_hours"]
                   .transform("sum")
@@ -863,7 +863,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         else:
             df["Row Cost"] = pd.NA
         # -------------------------------------------------------------------------------------
-        #Per Job Profit
+        # Per Job Profit
         if {"Labour", "Material Cost", "Material Sell", "Row Cost"}.issubset(df.columns):
             df["Labour Profit (Per Job)"] = (
                 df["Labour"].fillna(0) - df["Row Cost"].fillna(0)
@@ -883,9 +883,9 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             df["Profit (Per Job)"] = pd.NA
         #------------------------------------------------------------------------------
 
-        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date","Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Overhead without Wage", "Total Cost", "Total Pay", "Wage/Pension/NI", "Shift Hours", "First Job to Last Job Hours", "Shift First Job Travel", "Shift First Time on Site", "Shift Last Time off Site", "Shift Home Time",]:
+        for col in ["Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Overhead without Wage", "Total Cost", "Total Pay", "Wage/Pension/NI", "Shift Hours", "First Job to Last Job Hours", "Shift First Job Travel", "Shift First Time on Site", "Shift Last Time off Site", "Shift Home Time",]:
             df.loc[~mask_summary, col] = pd.NA
-            
+
         df = df.drop(columns=["Shift ID", "_job_hours"])
     else:
         df["Day Cost"] = pd.NA
@@ -901,8 +901,8 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df["Overhead without Wage"] = pd.NA
         df["Total Cost"] = pd.NA
         df["Shift Hours"] = pd.NA
-        
-    #9 makes sure these columns exsit
+
+    #9 makes sure these columns exist
     for col in ["Overhead", "Day Cost", "Day Sell", "Day Labour", "Day Hours", "Real Date", "Day Part Profit", "Day Basic Wage", "Day Overtime Wage", "Total Pay", "Wage/Pension/NI", "Overhead without Wage", "Total Cost",]:
         if col not in df.columns:
             df[col] = pd.NA
@@ -935,6 +935,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "Tom Greener-Simon",
         "Adrian Lewis",
         "Zain Saeed",
+        # NOTE: Jamie Boyd is NOT here so his Role shows as "Engineer"
     }
 
     SUBCONTRACTORS_FOR_ROLE = {
@@ -947,7 +948,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     ASSISTANTS_CLEAN = {name.strip() for name in ASSISTANTS_FOR_ROLE}
     SUBCONTRACTORS_CLEAN = {name.strip() for name in SUBCONTRACTORS_FOR_ROLE}
     ENGINEERS_ALL = {name.strip() for name in ENGINEER_RATE_WEEKDAY.keys()}
-    ENGINEERS_CLEAN = ENGINEERS_ALL -ASSISTANTS_CLEAN - SUBCONTRACTORS_CLEAN
+    ENGINEERS_CLEAN = ENGINEERS_ALL - ASSISTANTS_CLEAN - SUBCONTRACTORS_CLEAN
     eng_clean = df["Engineer"].astype(str).str.strip()
 
     df["Role"] = "Unknown"
@@ -963,7 +964,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             if "Real Date (Each Row)" in df.columns
             else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
         )
-            
         airon_mask = eng_clean.eq("Airon Paul") & row_date.notna()
         df.loc[airon_mask & (row_date >= cutoff), "Role"] = "Engineer"
         df.loc[airon_mask & (row_date < cutoff), "Role"] = "Assistant"
@@ -975,7 +975,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             if "Real Date (Each Row)" in df.columns
             else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
         )
-            
         kieran_mask = eng_clean.eq("kieran Mbala") & row_date.notna()
         df.loc[kieran_mask & (row_date >= cutoff), "Role"] = "Engineer"
         df.loc[kieran_mask & (row_date < cutoff), "Role"] = "Assistant"
@@ -987,7 +986,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             if "Real Date (Each Row)" in df.columns
             else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
         )
-            
         Sam_mask = eng_clean.eq("Sam Eade") & row_date.notna()
         df.loc[Sam_mask & (row_date >= cutoff), "Role"] = "Engineer"
         df.loc[Sam_mask & (row_date < cutoff), "Role"] = "Assistant"
@@ -999,7 +997,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             if "Real Date (Each Row)" in df.columns
             else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
         )
-            
         Sharick_mask = eng_clean.eq("Sharick Bartley") & row_date.notna()
         df.loc[Sharick_mask & (row_date >= cutoff), "Role"] = "Engineer"
         df.loc[Sharick_mask & (row_date < cutoff), "Role"] = "Assistant"
@@ -1011,7 +1008,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             if "Real Date (Each Row)" in df.columns
             else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
         )
-            
         Younas_mask = eng_clean.eq("Younas") & row_date.notna()
         df.loc[Younas_mask & (row_date >= cutoff), "Role"] = "Engineer"
         df.loc[Younas_mask & (row_date < cutoff), "Role"] = "Assistant"
@@ -1023,7 +1019,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             if "Real Date (Each Row)" in df.columns
             else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
         )
-            
         Tom_mask = eng_clean.eq("Tom Greener-Simon") & row_date.notna()
         df.loc[Tom_mask & (row_date >= cutoff), "Role"] = "Engineer"
         df.loc[Tom_mask & (row_date < cutoff), "Role"] = "Assistant"
@@ -1035,7 +1030,6 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             if "Real Date (Each Row)" in df.columns
             else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
         )
-            
         Adrian_mask = eng_clean.eq("Adrian Lewis") & row_date.notna()
         df.loc[Adrian_mask & (row_date >= cutoff), "Role"] = "Engineer"
         df.loc[Adrian_mask & (row_date < cutoff), "Role"] = "Assistant"
@@ -1043,48 +1037,40 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     #-------------Engineer Recall Logic----------------
     if {"Job Number", "Job Type", "Engineer"}.issubset(df.columns):
 
-        # Normalise
         job_type_up = df["Job Type"].astype(str).str.strip().str.upper()
         job_num_str = df["Job Number"].astype(str).str.strip()
         eng_clean   = df["Engineer"].astype(str).str.strip()
 
-        # Assistants mask (same list as in the cost-sharing logic)
         row_date = (
             pd.to_datetime(df["Real Date (Each Row)"], errors="coerce").dt.date
             if "Real Date (Each Row)" in df.columns
             else pd.to_datetime(df["Job Travel"], errors="coerce").dt.date
         )
-                           
+
         is_assistant = eng_clean.isin(ASSISTANTS)
 
         for name, cutoff in ASSISTANT_CUTOFFS.items():
             m = eng_clean.eq(name) & row_date.notna()
             is_assistant = is_assistant & ~(m & (row_date >= cutoff))
-        
-        # Base id = bit before "/", e.g. "ABC/000" -> "ABC"
+
         base_id = job_num_str.str.split("/", n=1).str[0]
-        # Suffix = bit after "/", e.g. "ABC/000" -> "000"
         rec_suffix = job_num_str.str.split("/", n=1).str[1]
 
-        # Turn suffix into an integer so sort goes: original (-1), /000, /001, /002...
         def parse_rec(x):
             if pd.isna(x):
-                return -1  # original job (no slash) always first
+                return -1
             x = str(x).strip()
             if x == "":
                 return -1
             try:
                 return int(x)
             except ValueError:
-                # weird suffix, push it to the end
                 return 9999
 
         rec_num = rec_suffix.apply(parse_rec)
 
-        # Make sure the column exists
         df["Engineer Recall"] = pd.NA
 
-        # Helper frame for grouping
         tmp = df.copy()
         tmp["job_type_up"]  = job_type_up
         tmp["base_id"]      = base_id
@@ -1094,19 +1080,16 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         for base, idx in tmp.groupby("base_id").groups.items():
             grp = tmp.loc[idx].sort_values("rec_num")
 
-            last_engineer = None  # last *non-assistant* engineer in this chain
+            last_engineer = None
 
             for row_idx, row in grp.iterrows():
                 jt            = row["job_type_up"]
                 eng           = row["Engineer"]
                 row_is_asst   = bool(row["is_assistant"])
 
-                # If this is a RECALL row and we have a previous non-assistant engineer
-                # AND this row itself is not an assistant, then fill Engineer Recall.
                 if jt == "RECALL" and (last_engineer is not None) and (not row_is_asst):
                     df.at[row_idx, "Engineer Recall"] = last_engineer
 
-                # Update last_engineer ONLY from non-assistant rows
                 if (not row_is_asst) and pd.notna(eng) and str(eng).strip() != "":
                     last_engineer = eng
     else:
@@ -1188,6 +1171,7 @@ def transform_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df = df[[c for c in desired_order if c in df.columns] + [c for c in df.columns if c not in desired_order]]
 
     return df
+
 
 def connect_ftp() -> FTP_TLS:
     if not FTP_USER or not FTP_PASS:
@@ -1289,7 +1273,7 @@ def process_new_files():
             else:
                 df_clean = transform_dataframe(df_raw)
 
-            upload_dataframe_as_csv(ftps,OUTPUT_DIR, processed_name, df_clean)
+            upload_dataframe_as_csv(ftps, OUTPUT_DIR, processed_name, df_clean)
             print(f"Uploaded cleaned file to {OUTPUT_DIR}/{processed_name}")
 
             local_path = os.path.join("/tmp", processed_name)
